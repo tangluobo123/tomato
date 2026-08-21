@@ -91,7 +91,10 @@ public class ToolsModule implements Module {
         ScrollPane scrollPane = new ScrollPane(toolList);
         scrollPane.setFitToWidth(true);
         scrollPane.setFitToHeight(true);
-        scrollPane.setStyle("-fx-background-color: transparent; -fx-border-color: transparent;");
+        scrollPane.setStyle("-fx-background-color: transparent; -fx-border-color: transparent; -fx-border-width: 0; -fx-padding: 0; -fx-background-insets: 0; -fx-border-insets: 0;");
+        // 应用 session-scroll-pane 样式类：清除 .viewport 默认 background-insets，消除列表项两侧空白
+        scrollPane.getStyleClass().add("session-scroll-pane");
+        scrollPane.getStylesheets().add(getClass().getResource("/css/connect-tree.css").toExternalForm());
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
 
@@ -155,6 +158,18 @@ public class ToolsModule implements Module {
         // Hosts 文件管理工具
         Node hostsFileIcon = createHostsFileIcon();
         toolItems.add(new ToolItem("hosts_file", "Hosts文件管理", "管理和切换不同环境的Hosts配置", hostsFileIcon));
+
+        // 图片背景透明化工具
+        Node imageBgRemoverIcon = createImageBackgroundRemoverIcon();
+        toolItems.add(new ToolItem("image_background_remover", "图片背景透明化", "JPG/PNG白灰背景转透明PNG", imageBgRemoverIcon));
+
+        // Trae 会话管理工具
+        Node traeSessionIcon = createTraeSessionIcon();
+        toolItems.add(new ToolItem("trae_session", "Trae会话管理", "管理 Trae CN 多账号会话切换", traeSessionIcon));
+
+        // 资源图标提取工具
+        Node extractIcon = createExtractIcon();
+        toolItems.add(new ToolItem("resource_extractor", "资源图标提取", "从EXE/DLL中提取嵌入资源", extractIcon));
     }
 
     private Node createImageConvertIcon() {
@@ -201,6 +216,36 @@ public class ToolsModule implements Module {
         // Material Icons: dns (域名解析/Hosts 文件图标)
         SVGPath path = new SVGPath();
         path.setContent("M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM9 17H7v-5h2v5zm4 0h-2V7h2v10zm4 0h-2v-7h2v7z");
+        path.setFill(Color.web("#1976D2"));
+        path.setScaleX(0.9);
+        path.setScaleY(0.9);
+        return path;
+    }
+
+    private Node createImageBackgroundRemoverIcon() {
+        // Material Icons: layers (层叠，代表透明图层)
+        SVGPath path = new SVGPath();
+        path.setContent("M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z");
+        path.setFill(Color.web("#1976D2"));
+        path.setScaleX(0.9);
+        path.setScaleY(0.9);
+        return path;
+    }
+
+    private Node createTraeSessionIcon() {
+        // Material Icons: people (多账号会话管理)
+        SVGPath path = new SVGPath();
+        path.setContent("M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z");
+        path.setFill(Color.web("#1976D2"));
+        path.setScaleX(0.9);
+        path.setScaleY(0.9);
+        return path;
+    }
+
+    private Node createExtractIcon() {
+        // Material Icons: extraction (资源提取图标)
+        SVGPath path = new SVGPath();
+        path.setContent("M21 9v10c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V9c0-1.1.9-2 2-2h3.17L8 4.17 9.41 5.58 11.83 3.17 13.24 4.58 14.66 3.17 16 4.58 15.83 7H19c1.1 0 2 .9 2 2zm-1 0H4v10h16V9z");
         path.setFill(Color.web("#1976D2"));
         path.setScaleX(0.9);
         path.setScaleY(0.9);
@@ -320,6 +365,21 @@ public class ToolsModule implements Module {
                 HostsFilePane hostsFilePane = new HostsFilePane();
                 contentArea.getChildren().add(hostsFilePane);
                 VBox.setVgrow(hostsFilePane, Priority.ALWAYS);
+                break;
+            case "image_background_remover":
+                ImageBackgroundRemoverPane bgRemoverPane = new ImageBackgroundRemoverPane();
+                contentArea.getChildren().add(bgRemoverPane);
+                VBox.setVgrow(bgRemoverPane, Priority.ALWAYS);
+                break;
+            case "trae_session":
+                TraeSessionPane traeSessionPane = new TraeSessionPane();
+                contentArea.getChildren().add(traeSessionPane);
+                VBox.setVgrow(traeSessionPane, Priority.ALWAYS);
+                break;
+            case "resource_extractor":
+                ResourceExtractorPane extractorPane = new ResourceExtractorPane();
+                contentArea.getChildren().add(extractorPane);
+                VBox.setVgrow(extractorPane, Priority.ALWAYS);
                 break;
             default:
                 VBox placeholderBox = new VBox();

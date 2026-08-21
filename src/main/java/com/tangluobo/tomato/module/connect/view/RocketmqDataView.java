@@ -1,5 +1,6 @@
 package com.tangluobo.tomato.module.connect.view;
 
+import com.tangluobo.tomato.utils.DialogPositionUtil;
 import com.tangluobo.tomato.module.connect.ConnectionConfig;
 import com.tangluobo.tomato.module.connect.service.RocketmqService;
 import javafx.application.Platform;
@@ -39,9 +40,14 @@ public class RocketmqDataView extends VBox {
     private VBox topicOffsetSection;
 
     // Message tab
+    private TabPane queryTabPane;
     private String currentMessageTopic;
     private TextField msgKeyField;
     private TextField msgMsgIdField;
+    private TextField sendTagsField;
+    private TextField sendKeysField;
+    private ComboBox<String> sendDelayLevelCombo;
+    private TextArea sendBodyArea;
     private DatePicker beginDatePicker;
     private DatePicker endDatePicker;
     private TableView<MessageItem> messageTable;
@@ -127,6 +133,16 @@ public class RocketmqDataView extends VBox {
         mainTabPane.getSelectionModel().select(1);
         String t = (topicName != null && !topicName.isEmpty()) ? topicName : this.topicName;
         currentMessageTopic = t;
+    }
+
+    public void selectSendTab(String topicName) {
+        mainTabPane.getSelectionModel().select(1);
+        String t = (topicName != null && !topicName.isEmpty()) ? topicName : this.topicName;
+        currentMessageTopic = t;
+        if (queryTabPane != null) {
+            queryTabPane.getSelectionModel().select(3);
+            queryTabPane.setMaxHeight(300);
+        }
     }
 
     // ==================== Topic Tab ====================
@@ -295,6 +311,7 @@ public class RocketmqDataView extends VBox {
                     alert.setTitle("错误");
                     alert.setHeaderText(null);
                     alert.setContentText("获取主题统计信息失败: " + e.getMessage());
+                    DialogPositionUtil.centerOnOwner(alert, this);
                     alert.showAndWait();
                 });
             }
@@ -345,6 +362,7 @@ public class RocketmqDataView extends VBox {
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
         dialog.setResultConverter(btn -> btn == ButtonType.OK ? topicField.getText() + "|" + queueField.getText() : null);
+        DialogPositionUtil.centerOnOwner(dialog, this);
         dialog.showAndWait().ifPresent(result -> {
             String[] parts = result.split("\\|");
             String topic = parts[0].trim();
@@ -407,7 +425,7 @@ public class RocketmqDataView extends VBox {
         content.setPadding(Insets.EMPTY);
 
         // 查询方式子标签
-        TabPane queryTabPane = new TabPane();
+        queryTabPane = new TabPane();
 
         // Apply no-gap CSS to nested TabPane
         String queryCss = getClass().getResource("/css/tab-nogap.css") != null
@@ -511,11 +529,62 @@ public class RocketmqDataView extends VBox {
         timeQueryTab.setContent(timeQueryContent);
         timeQueryTab.setClosable(false);
 
-        queryTabPane.getTabs().addAll(keyQueryTab, msgIdQueryTab, timeQueryTab);
+        // --- 发送消息 ---
+        VBox sendContent = new VBox(5);
+        sendContent.setPadding(Insets.EMPTY);
+        sendContent.setAlignment(Pos.CENTER_LEFT);
 
-        // Re-apply no-gap styles when sub-tabs change
+        sendTagsField = new TextField();
+        sendTagsField.setPromptText("Tags (可选)");
+        sendTagsField.setPrefWidth(150);
+        sendTagsField.setStyle("-fx-font-size: 12px;");
+
+        sendKeysField = new TextField();
+        sendKeysField.setPromptText("Keys (可选)");
+        sendKeysField.setPrefWidth(150);
+        sendKeysField.setStyle("-fx-font-size: 12px;");
+
+        sendDelayLevelCombo = new ComboBox<>();
+        sendDelayLevelCombo.getItems().add("无");
+        for (int i = 1; i <= 18; i++) {
+            sendDelayLevelCombo.getItems().add(String.valueOf(i));
+        }
+        sendDelayLevelCombo.setValue("无");
+        sendDelayLevelCombo.setPrefWidth(80);
+        sendDelayLevelCombo.setStyle("-fx-font-size: 12px;");
+
+        Button sendBtn = new Button("发送");
+        sendBtn.setStyle("-fx-background-color: #07c160; -fx-text-fill: white; -fx-font-size: 12px;");
+        sendBtn.setOnAction(e -> doSendMessage());
+
+        HBox sendConfigBar = new HBox(10);
+        sendConfigBar.setAlignment(Pos.CENTER_LEFT);
+        sendConfigBar.getChildren().addAll(new Label("Tags:"), sendTagsField, new Label("Keys:"), sendKeysField,
+                new Label("延迟级别:"), sendDelayLevelCombo, sendBtn);
+
+        sendBodyArea = new TextArea();
+        sendBodyArea.setPromptText("消息内容");
+        sendBodyArea.setPrefHeight(100);
+        sendBodyArea.setStyle("-fx-font-size: 12px;");
+
+        sendContent.getChildren().addAll(sendConfigBar, new Label("Body:"), sendBodyArea);
+
+        Tab sendTab = new Tab("发送消息");
+        sendTab.setContent(sendContent);
+        sendTab.setClosable(false);
+
+        queryTabPane.getTabs().addAll(keyQueryTab, msgIdQueryTab, timeQueryTab, sendTab);
+
+        final Tab finalSendTab = sendTab;
         queryTabPane.getSelectionModel().selectedItemProperty().addListener((obs, oldTab, newTab) ->
-                Platform.runLater(this::applyNoGapStyles));
+                Platform.runLater(() -> {
+                    if (newTab == finalSendTab) {
+                        queryTabPane.setMaxHeight(300);
+                    } else {
+                        queryTabPane.setMaxHeight(120);
+                    }
+                    applyNoGapStyles();
+                }));
 
         // 消息表格
         messageTable = new TableView<>();
@@ -684,6 +753,7 @@ public class RocketmqDataView extends VBox {
                         dialog.setTitle("消费异常");
                         dialog.setHeaderText("消费者组: " + rowData.get(0));
                         dialog.getDialogPane().setContent(area);
+                        DialogPositionUtil.centerOnOwner(dialog, this);
                         dialog.showAndWait();
                     }
                 });
@@ -881,6 +951,56 @@ public class RocketmqDataView extends VBox {
         }, "RocketMQ-QueryByTime").start();
     }
 
+    private void doSendMessage() {
+        final String topic = getCurrentTopic();
+        if (topic == null || topic.isEmpty()) {
+            showWarning("当前标签未关联主题");
+            return;
+        }
+        final String body = sendBodyArea.getText();
+        if (body == null || body.trim().isEmpty()) {
+            showWarning("消息内容不能为空");
+            return;
+        }
+        final String tags = sendTagsField.getText().trim();
+        final String keys = sendKeysField.getText().trim();
+        final String delayText = sendDelayLevelCombo.getValue();
+        final int delayLevel;
+        try {
+            delayLevel = (delayText == null || "无".equals(delayText)) ? 0 : Integer.parseInt(delayText);
+        } catch (NumberFormatException ex) {
+            showWarning("延迟级别必须为数字");
+            return;
+        }
+
+        new Thread(() -> {
+            try {
+                Map<String, Object> result = RocketmqService.sendMessage(config, topic,
+                        tags.isEmpty() ? null : tags, keys.isEmpty() ? null : keys, body, delayLevel);
+                Platform.runLater(() -> {
+                    String msgId = String.valueOf(result.getOrDefault("msgId", ""));
+                    String queueId = String.valueOf(result.getOrDefault("queueId", ""));
+                    String queueOffset = String.valueOf(result.getOrDefault("queueOffset", ""));
+                    Alert info = new Alert(Alert.AlertType.INFORMATION);
+                    info.setTitle("发送成功");
+                    info.setHeaderText("消息已发送到 " + topic);
+                    info.setContentText("MsgId: " + msgId + "\nQueueId: " + queueId + "\nQueueOffset: " + queueOffset);
+                    DialogPositionUtil.centerOnOwner(info, this);
+                    info.showAndWait();
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setTitle("发送失败");
+                    alert.setHeaderText(null);
+                    alert.setContentText("发送消息失败: " + e.getMessage());
+                    DialogPositionUtil.centerOnOwner(alert, this);
+                    alert.showAndWait();
+                });
+            }
+        }, "RocketMQ-SendMessage").start();
+    }
+
     private void displayQueryResults(List<Map<String, Object>> messages) {
         Platform.runLater(() -> {
             messageData.clear();
@@ -1056,6 +1176,7 @@ public class RocketmqDataView extends VBox {
         confirm.setTitle("确认重新消费");
         confirm.setHeaderText("让消费者组 " + group + " 重新消费此消息");
         confirm.setContentText("消息ID: " + msgId + "\n此操作不产生新的消息ID，确定吗？");
+        DialogPositionUtil.centerOnOwner(confirm, this);
         confirm.showAndWait().ifPresent(btn -> {
             if (btn == ButtonType.OK) {
                 new Thread(() -> {
@@ -1224,6 +1345,7 @@ public class RocketmqDataView extends VBox {
         alert.setTitle("成功");
         alert.setHeaderText(null);
         alert.setContentText(msg);
+        DialogPositionUtil.centerOnOwner(alert, this);
         alert.showAndWait();
     }
 

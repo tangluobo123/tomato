@@ -7,6 +7,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
@@ -54,7 +55,9 @@ public class JsonToolPane extends VBox {
     private static final String HISTORY_FILE = System.getProperty("user.home") + File.separator + ".tomata" + File.separator + "json_history.json";
     private ListView<JsonHistoryItem> historyListView;
     private ObservableList<JsonHistoryItem> historyData;
-    private SplitPane outerSplitPane;
+    // 历史记录分隔条拖拽状态
+    private double historyDividerStartX;
+    private double historyDividerStartWidth;
 
     // Fold state
     private Set<String> foldedIds = new HashSet<>();
@@ -83,11 +86,14 @@ public class JsonToolPane extends VBox {
         setMaxWidth(Double.MAX_VALUE);
         setMaxHeight(Double.MAX_VALUE);
 
+        // 加载统一样式表，使 SplitPane 分隔条使用 #E5E5E5 细线样式
+        getStylesheets().add(getClass().getResource("/css/connect-tree.css").toExternalForm());
+
         // 自定义标题栏
         HBox titleBar = new HBox(10);
         titleBar.setAlignment(Pos.CENTER_LEFT);
-        titleBar.setPadding(new Insets(14, 20, 14, 20));
-        titleBar.setStyle("-fx-background-color: #f7f8fa; -fx-border-color: #e8e8e8; -fx-border-width: 0 0 1 0;");
+        titleBar.setPadding(new Insets(14, 20, 10, 20));
+        titleBar.setStyle("-fx-background-color: #f7f8fa;");
         SVGPath titleIcon = new SVGPath();
         titleIcon.setContent("M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM6 20V4h5v7h7v9H6zm2-6h8v2H8v-2zm0 4h5v2H8v-2z");
         titleIcon.setFill(Color.web("#1976D2"));
@@ -103,7 +109,7 @@ public class JsonToolPane extends VBox {
 
         // 操作按钮区
         HBox buttonBar = new HBox(10);
-        buttonBar.setPadding(new Insets(15, 20, 5, 20));
+        buttonBar.setPadding(new Insets(8, 20, 10, 20));
         buttonBar.setAlignment(Pos.CENTER_LEFT);
 
         Button formatBtn = createButton("格式化", "#4CAF50");
@@ -140,25 +146,65 @@ public class JsonToolPane extends VBox {
         splitPane.setDividerPositions(0.5);
         VBox.setVgrow(splitPane, Priority.ALWAYS);
 
-        // 外部分割：历史 | (输入+输出)
-        outerSplitPane = new SplitPane();
-        outerSplitPane.setPadding(new Insets(10, 20, 10, 20));
-        outerSplitPane.getItems().addAll(historyPanel, splitPane);
-        outerSplitPane.setDividerPositions(0.15);
+        // 外部分割：历史 | (输入+输出) —— 使用 Region 分隔条，与连接树/内容页分隔样式一致
+        HBox contentBox = new HBox();
+        contentBox.setPadding(new Insets(0));
+        contentBox.setStyle("-fx-background-insets: 0; -fx-padding: 0;");
+
+        // 分隔条：1px 宽，#E5E5E5，可拖拽
+        Region historyDivider = new Region();
+        historyDivider.setStyle("-fx-background-color: #E5E5E5;");
+        historyDivider.setPrefWidth(1.0);
+        historyDivider.setMaxWidth(1.0);
+        historyDivider.setMinWidth(1.0);
+        historyDivider.setCursor(Cursor.H_RESIZE);
+        setupHistoryDivider(historyDivider, historyPanel);
+
+        contentBox.getChildren().addAll(historyPanel, historyDivider, splitPane);
+        HBox.setHgrow(splitPane, Priority.ALWAYS);
+
+        // 标题+按钮与内容区之间的分隔线
+        Separator topSeparator = new Separator();
+        topSeparator.setStyle("-fx-background-color: #E5E5E5;");
+        topSeparator.setPrefHeight(1);
+        topSeparator.setMaxHeight(1);
+        topSeparator.setMinHeight(1);
 
         // 状态标签
         statusLabel = new Label("");
         statusLabel.setPadding(new Insets(5, 20, 10, 20));
         statusLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #666;");
 
-        getChildren().addAll(titleBar, buttonBar, outerSplitPane, statusLabel);
-        VBox.setVgrow(outerSplitPane, Priority.ALWAYS);
+        getChildren().addAll(titleBar, buttonBar, topSeparator, contentBox, statusLabel);
+        VBox.setVgrow(contentBox, Priority.ALWAYS);
     }
 
     private Button createButton(String text, String color) {
         Button btn = new Button(text);
         btn.setStyle(String.format("-fx-background-color: %s; -fx-text-fill: white; -fx-font-size: 13px; -fx-padding: 6 14; -fx-background-radius: 4; -fx-cursor: hand;", color));
         return btn;
+    }
+
+    /**
+     * 设置历史记录分隔条的拖拽行为，与连接树/内容页分隔条逻辑一致。
+     */
+    private void setupHistoryDivider(Region divider, VBox historyPanel) {
+        divider.setOnMouseEntered(e -> divider.setCursor(Cursor.H_RESIZE));
+        divider.setOnMouseExited(e -> divider.setCursor(Cursor.DEFAULT));
+
+        divider.setOnMousePressed(e -> {
+            historyDividerStartX = e.getScreenX();
+            historyDividerStartWidth = historyPanel.getWidth();
+        });
+
+        divider.setOnMouseDragged(e -> {
+            double deltaX = e.getScreenX() - historyDividerStartX;
+            double newWidth = historyDividerStartWidth + deltaX;
+            if (newWidth >= 120 && newWidth <= 400) {
+                historyPanel.setPrefWidth(newWidth);
+                historyPanel.setMinWidth(newWidth);
+            }
+        });
     }
 
     private VBox createInputPanel() {
@@ -170,7 +216,8 @@ public class JsonToolPane extends VBox {
 
         inputArea = new TextArea();
         inputArea.setPromptText("请输入JSON数据");
-        inputArea.setStyle("-fx-font-family: 'Consolas', 'Courier New', monospace; -fx-font-size: 13px;");
+        inputArea.setStyle("-fx-font-family: 'Consolas', 'Courier New', monospace; -fx-font-size: 13px; " +
+                "-fx-focus-color: transparent; -fx-faint-focus-color: transparent;");
         VBox.setVgrow(inputArea, Priority.ALWAYS);
 
         panel.getChildren().addAll(lbl, inputArea);
@@ -257,7 +304,7 @@ public class JsonToolPane extends VBox {
     private VBox createHistoryPanel() {
         VBox panel = new VBox(6);
         panel.setFillWidth(true);
-        panel.setStyle("-fx-background-color: #fafafa; -fx-border-color: #e8e8e8; -fx-border-width: 0 1 0 0;");
+        panel.setStyle("-fx-background-color: #fafafa;");
         panel.setMinWidth(150);
         panel.setPrefWidth(180);
 

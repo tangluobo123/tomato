@@ -57,8 +57,7 @@ public class PostgresDbHandler extends AbstractDbHandler {
             buildSchemaFolders(schemaItem, config, dbName, schemaName);
             schemaItem.setExpanded(true);
 
-            loadTablesForFolder(schemaItem.getChildren().get(0), config, dbName, schemaName, true);
-            loadViewsForFolder(schemaItem.getChildren().get(1), config, dbName, schemaName, true);
+            loadTablesAndViewsForFolder(schemaItem.getChildren().get(0), schemaItem.getChildren().get(1), config, dbName, schemaName, true);
         } else {
             schemaItem.setExpanded(!schemaItem.isExpanded());
         }
@@ -89,6 +88,8 @@ public class PostgresDbHandler extends AbstractDbHandler {
      */
     private void loadSchemasForDatabase(TreeItem<String> dbItem, ConnectionConfig config, String dbName) {
         new Thread(() -> {
+            java.util.concurrent.locks.ReentrantLock connLock = DatabaseService.acquireUsageLock(config, dbName);
+            connLock.lock();
             try {
                 List<String> schemas = DatabaseService.getSchemas(config, dbName);
                 Platform.runLater(() -> {
@@ -110,6 +111,8 @@ public class PostgresDbHandler extends AbstractDbHandler {
                     alert.showAndWait();
                 });
                 e.printStackTrace();
+            } finally {
+                connLock.unlock();
             }
         }, "PG-LoadSchemas").start();
     }

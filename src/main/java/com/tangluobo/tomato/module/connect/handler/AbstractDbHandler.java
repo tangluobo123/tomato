@@ -1,35 +1,39 @@
 package com.tangluobo.tomato.module.connect.handler;
 
 import com.tangluobo.tomato.module.connect.*;
+import com.tangluobo.tomato.module.connect.dialog.CopyTableDialog;
 import com.tangluobo.tomato.module.connect.dialog.CreateDatabaseDialog;
 import com.tangluobo.tomato.module.connect.dialog.EditDatabaseDialog;
+import com.tangluobo.tomato.module.connect.dialog.PasswordPromptDialog;
 import com.tangluobo.tomato.module.connect.dialog.GlobalConfigDialog;
 import com.tangluobo.tomato.module.connect.dialog.RestoreDialog;
 import com.tangluobo.tomato.module.connect.service.BackupService;
 import com.tangluobo.tomato.module.connect.service.DatabaseService;
+import com.tangluobo.tomato.utils.DialogPositionUtil;
 import com.tangluobo.tomato.module.connect.view.SqlEditorView;
 import com.tangluobo.tomato.module.connect.view.TableDataView;
 import com.tangluobo.tomato.module.connect.view.TableStructureView;
+import com.tangluobo.tomato.module.connect.view.TableObjectsView;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
+import javafx.event.Event;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ContextMenu;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
-import javafx.scene.control.PasswordField;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.TreeItem;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.GridPane;
-import javafx.geometry.Insets;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.DataFormat;
 import javafx.stage.Stage;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -124,24 +128,16 @@ public abstract class AbstractDbHandler implements ConnectHandler {
         }
 
         if (config.getPassword() == null) {
-            Dialog<String> pwdDialog = new Dialog<>();
-            pwdDialog.setTitle("输入密码");
-            pwdDialog.setHeaderText(config.getName() + " (" + config.getUsername() + "@" + config.getHost() + ")");
-            pwdDialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-            GridPane grid = new GridPane();
-            grid.setHgap(10);
-            grid.setVgap(10);
-            grid.setPadding(new Insets(20, 10, 10, 10));
-            PasswordField pf = new PasswordField();
-            pf.setPrefWidth(250);
-            grid.add(new Label("密码："), 0, 0);
-            grid.add(pf, 1, 0);
-            pwdDialog.getDialogPane().setContent(grid);
-            pwdDialog.setResultConverter(dialogButton -> dialogButton == ButtonType.OK ? pf.getText() : null);
-            final String[] passwordHolder = new String[1];
-            pwdDialog.showAndWait().ifPresentOrElse(pwd -> passwordHolder[0] = pwd, () -> {});
-            if (passwordHolder[0] == null || passwordHolder[0].isEmpty()) return;
-            config.setPassword(passwordHolder[0]);
+            PasswordPromptDialog.Result pwdResult = PasswordPromptDialog.show(
+                    "输入密码",
+                    config.getName() + " (" + config.getUsername() + "@" + config.getHost() + ")",
+                    "密码：", null, "保存密码");
+            if (pwdResult == null || pwdResult.getPassword() == null || pwdResult.getPassword().isEmpty()) return;
+            config.setPassword(pwdResult.getPassword());
+            if (pwdResult.isSavePassword()) {
+                config.setSavePassword(true);
+                module.saveConnections();
+            }
         }
 
         module.getConnectingHosts().add(hostItem);
@@ -237,24 +233,16 @@ public abstract class AbstractDbHandler implements ConnectHandler {
     /** 新建数据库 */
     public void handleCreateDatabase(TreeItem<String> hostItem, ConnectionConfig config) {
         if (config.getPassword() == null) {
-            Dialog<String> pwdDialog = new Dialog<>();
-            pwdDialog.setTitle("输入密码");
-            pwdDialog.setHeaderText(config.getName() + " (" + config.getUsername() + "@" + config.getHost() + ")");
-            pwdDialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-            GridPane grid = new GridPane();
-            grid.setHgap(10);
-            grid.setVgap(10);
-            grid.setPadding(new Insets(20, 10, 10, 10));
-            PasswordField pf = new PasswordField();
-            pf.setPrefWidth(250);
-            grid.add(new Label("密码："), 0, 0);
-            grid.add(pf, 1, 0);
-            pwdDialog.getDialogPane().setContent(grid);
-            pwdDialog.setResultConverter(dialogButton -> dialogButton == ButtonType.OK ? pf.getText() : null);
-            final String[] passwordHolder = new String[1];
-            pwdDialog.showAndWait().ifPresentOrElse(pwd -> passwordHolder[0] = pwd, () -> {});
-            if (passwordHolder[0] == null || passwordHolder[0].isEmpty()) return;
-            config.setPassword(passwordHolder[0]);
+            PasswordPromptDialog.Result pwdResult = PasswordPromptDialog.show(
+                    "输入密码",
+                    config.getName() + " (" + config.getUsername() + "@" + config.getHost() + ")",
+                    "密码：", null, "保存密码");
+            if (pwdResult == null || pwdResult.getPassword() == null || pwdResult.getPassword().isEmpty()) return;
+            config.setPassword(pwdResult.getPassword());
+            if (pwdResult.isSavePassword()) {
+                config.setSavePassword(true);
+                module.saveConnections();
+            }
         }
 
         Stage stage = module.getStage();
@@ -294,24 +282,16 @@ public abstract class AbstractDbHandler implements ConnectHandler {
         ConnectionConfig config = data.getConnectionConfig();
 
         if (config.getPassword() == null) {
-            Dialog<String> pwdDialog = new Dialog<>();
-            pwdDialog.setTitle("输入密码");
-            pwdDialog.setHeaderText(config.getName() + " (" + config.getUsername() + "@" + config.getHost() + ")");
-            pwdDialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-            GridPane grid = new GridPane();
-            grid.setHgap(10);
-            grid.setVgap(10);
-            grid.setPadding(new Insets(20, 10, 10, 10));
-            PasswordField pf = new PasswordField();
-            pf.setPrefWidth(250);
-            grid.add(new Label("密码："), 0, 0);
-            grid.add(pf, 1, 0);
-            pwdDialog.getDialogPane().setContent(grid);
-            pwdDialog.setResultConverter(dialogButton -> dialogButton == ButtonType.OK ? pf.getText() : null);
-            final String[] passwordHolder = new String[1];
-            pwdDialog.showAndWait().ifPresentOrElse(pwd -> passwordHolder[0] = pwd, () -> {});
-            if (passwordHolder[0] == null || passwordHolder[0].isEmpty()) return;
-            config.setPassword(passwordHolder[0]);
+            PasswordPromptDialog.Result pwdResult = PasswordPromptDialog.show(
+                    "输入密码",
+                    config.getName() + " (" + config.getUsername() + "@" + config.getHost() + ")",
+                    "密码：", null, "保存密码");
+            if (pwdResult == null || pwdResult.getPassword() == null || pwdResult.getPassword().isEmpty()) return;
+            config.setPassword(pwdResult.getPassword());
+            if (pwdResult.isSavePassword()) {
+                config.setSavePassword(true);
+                module.saveConnections();
+            }
         }
 
         Stage stage = module.getStage();
@@ -377,24 +357,16 @@ public abstract class AbstractDbHandler implements ConnectHandler {
             if (response != ButtonType.YES) return;
 
             if (config.getPassword() == null) {
-                Dialog<String> pwdDialog = new Dialog<>();
-                pwdDialog.setTitle("输入密码");
-                pwdDialog.setHeaderText(config.getName() + " (" + config.getUsername() + "@" + config.getHost() + ")");
-                pwdDialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-                GridPane grid = new GridPane();
-                grid.setHgap(10);
-                grid.setVgap(10);
-                grid.setPadding(new Insets(20, 10, 10, 10));
-                PasswordField pf = new PasswordField();
-                pf.setPrefWidth(250);
-                grid.add(new Label("密码："), 0, 0);
-                grid.add(pf, 1, 0);
-                pwdDialog.getDialogPane().setContent(grid);
-                pwdDialog.setResultConverter(dialogButton -> dialogButton == ButtonType.OK ? pf.getText() : null);
-                final String[] passwordHolder = new String[1];
-                pwdDialog.showAndWait().ifPresentOrElse(pwd -> passwordHolder[0] = pwd, () -> {});
-                if (passwordHolder[0] == null || passwordHolder[0].isEmpty()) return;
-                config.setPassword(passwordHolder[0]);
+                PasswordPromptDialog.Result pwdResult = PasswordPromptDialog.show(
+                        "输入密码",
+                        config.getName() + " (" + config.getUsername() + "@" + config.getHost() + ")",
+                        "密码：", null, "保存密码");
+                if (pwdResult == null || pwdResult.getPassword() == null || pwdResult.getPassword().isEmpty()) return;
+                config.setPassword(pwdResult.getPassword());
+                if (pwdResult.isSavePassword()) {
+                    config.setSavePassword(true);
+                    module.saveConnections();
+                }
             }
 
             new Thread(() -> {
@@ -538,6 +510,198 @@ public abstract class AbstractDbHandler implements ConnectHandler {
         }
     }
 
+    /**
+     * 删除对象视图传入的表/视图（不依赖左侧树选中状态）。
+     * 用于对象视图（TableObjectsView）的"删除表"按钮：根据传入的 DatabaseNodeData 列表
+     * 分组调用 DatabaseService.dropTables/dropViews，删除完成后回调刷新视图。
+     */
+    public void handleDeleteObjects(List<DatabaseNodeData> dataList, Runnable onComplete) {
+        if (dataList == null || dataList.isEmpty()) {
+            if (onComplete != null) onComplete.run();
+            return;
+        }
+
+        // 按表/视图分组收集名称（对象视图同属一个连接/数据库/schema）
+        List<String> tableNames = new ArrayList<>();
+        List<String> viewNames = new ArrayList<>();
+        DatabaseNodeData sample = null;
+        for (DatabaseNodeData d : dataList) {
+            if (d.getType() == DatabaseNodeData.NodeType.TABLE) {
+                tableNames.add(d.getName());
+                if (sample == null) sample = d;
+            } else if (d.getType() == DatabaseNodeData.NodeType.VIEW) {
+                viewNames.add(d.getName());
+                if (sample == null) sample = d;
+            }
+        }
+        if (sample == null) {
+            if (onComplete != null) onComplete.run();
+            return;
+        }
+
+        // 确认对话框（仅提示数量，不列出表名）
+        StringBuilder msg = new StringBuilder("确定要删除选中的 ");
+        if (!tableNames.isEmpty()) {
+            msg.append(tableNames.size()).append(" 张表");
+        }
+        if (!viewNames.isEmpty()) {
+            if (!tableNames.isEmpty()) msg.append("、");
+            msg.append(viewNames.size()).append(" 个视图");
+        }
+        msg.append("吗？此操作不可恢复！");
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("确认删除");
+        confirm.setHeaderText(null);
+        confirm.setContentText(msg.toString());
+        ButtonType deleteBtn = new ButtonType("确认删除");
+        confirm.getButtonTypes().setAll(deleteBtn, ButtonType.CANCEL);
+        DialogPositionUtil.centerOnOwner(confirm, module.getStage());
+        Optional<ButtonType> result = confirm.showAndWait();
+        if (result.isEmpty() || result.get() != deleteBtn) {
+            if (onComplete != null) onComplete.run();
+            return;
+        }
+
+        ConnectionConfig cfg = sample.getConnectionConfig();
+        String dbName = sample.getDatabaseName();
+        String schema = sample.getSchemaName();
+
+        new Thread(() -> {
+            try {
+                if (!tableNames.isEmpty()) {
+                    DatabaseService.dropTables(cfg, dbName, schema, tableNames);
+                }
+                if (!viewNames.isEmpty()) {
+                    DatabaseService.dropViews(cfg, dbName, schema, viewNames);
+                }
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    Alert err = new Alert(Alert.AlertType.ERROR);
+                    err.setTitle("删除失败");
+                    err.setHeaderText(null);
+                    err.setContentText(e.getMessage());
+                    DialogPositionUtil.centerOnOwner(err, module.getStage());
+                    err.showAndWait();
+                });
+            } finally {
+                if (onComplete != null) Platform.runLater(onComplete);
+            }
+        }, "DB-DeleteObjects").start();
+    }
+
+    /**
+     * 清空表数据（DELETE FROM）：根据传入的 DatabaseNodeData 列表收集表名，
+     * 调用 DatabaseService.clearTables 删除所有数据，完成后回调刷新视图。
+     * 仅处理 TABLE 类型对象，视图会被忽略。
+     */
+    public void handleClearTables(List<DatabaseNodeData> dataList, Runnable onComplete) {
+        if (dataList == null || dataList.isEmpty()) {
+            if (onComplete != null) onComplete.run();
+            return;
+        }
+        List<String> tableNames = collectTableNames(dataList);
+        if (tableNames.isEmpty()) {
+            if (onComplete != null) onComplete.run();
+            return;
+        }
+        DatabaseNodeData sample = findFirstTable(dataList);
+        confirmAndRun("清空确认",
+                "确定要清空选中的 " + tableNames.size() + " 张表的数据吗？\n" +
+                        "此操作将删除所有数据（DELETE FROM），不可恢复！",
+                "确认清空", tableNames, sample, "DB-ClearTables",
+                (cfg, db, schema, names) -> DatabaseService.clearTables(cfg, db, schema, names),
+                onComplete);
+    }
+
+    /**
+     * 截断表（TRUNCATE TABLE）：根据传入的 DatabaseNodeData 列表收集表名，
+     * 调用 DatabaseService.truncateTables 删除所有数据并重置自增列，完成后回调刷新视图。
+     * 仅处理 TABLE 类型对象，视图会被忽略。
+     */
+    public void handleTruncateTables(List<DatabaseNodeData> dataList, Runnable onComplete) {
+        if (dataList == null || dataList.isEmpty()) {
+            if (onComplete != null) onComplete.run();
+            return;
+        }
+        List<String> tableNames = collectTableNames(dataList);
+        if (tableNames.isEmpty()) {
+            if (onComplete != null) onComplete.run();
+            return;
+        }
+        DatabaseNodeData sample = findFirstTable(dataList);
+        confirmAndRun("截断确认",
+                "确定要截断选中的 " + tableNames.size() + " 张表吗？\n" +
+                        "此操作将删除所有数据（TRUNCATE TABLE），不可恢复，且会重置自增列！",
+                "确认截断", tableNames, sample, "DB-TruncateTables",
+                (cfg, db, schema, names) -> DatabaseService.truncateTables(cfg, db, schema, names),
+                onComplete);
+    }
+
+    /** 从 dataList 中收集表（TABLE）类型名称列表 */
+    private List<String> collectTableNames(List<DatabaseNodeData> dataList) {
+        List<String> tableNames = new ArrayList<>();
+        for (DatabaseNodeData d : dataList) {
+            if (d.getType() == DatabaseNodeData.NodeType.TABLE) {
+                tableNames.add(d.getName());
+            }
+        }
+        return tableNames;
+    }
+
+    /** 从 dataList 中查找第一个表（TABLE）类型对象作为连接/库/schema 取样 */
+    private DatabaseNodeData findFirstTable(List<DatabaseNodeData> dataList) {
+        for (DatabaseNodeData d : dataList) {
+            if (d.getType() == DatabaseNodeData.NodeType.TABLE) return d;
+        }
+        return null;
+    }
+
+    /** 批量执行表操作的通用流程：确认对话框 → 后台线程执行 → 错误提示 → 完成回调 */
+    private void confirmAndRun(String title, String message, String confirmBtnText,
+                               List<String> tableNames, DatabaseNodeData sample,
+                               String threadName,
+                               TableBatchAction action, Runnable onComplete) {
+        Alert confirm = new Alert(Alert.AlertType.WARNING);
+        confirm.setTitle(title);
+        confirm.setHeaderText(null);
+        confirm.setContentText(message);
+        ButtonType okBtn = new ButtonType(confirmBtnText);
+        confirm.getButtonTypes().setAll(okBtn, ButtonType.CANCEL);
+        DialogPositionUtil.centerOnOwner(confirm, module.getStage());
+        Optional<ButtonType> result = confirm.showAndWait();
+        if (result.isEmpty() || result.get() != okBtn) {
+            if (onComplete != null) onComplete.run();
+            return;
+        }
+
+        ConnectionConfig cfg = sample.getConnectionConfig();
+        String dbName = sample.getDatabaseName();
+        String schema = sample.getSchemaName();
+
+        new Thread(() -> {
+            try {
+                action.execute(cfg, dbName, schema, tableNames);
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    Alert err = new Alert(Alert.AlertType.ERROR);
+                    err.setTitle("操作失败");
+                    err.setHeaderText(null);
+                    err.setContentText(e.getMessage());
+                    DialogPositionUtil.centerOnOwner(err, module.getStage());
+                    err.showAndWait();
+                });
+            } finally {
+                if (onComplete != null) Platform.runLater(onComplete);
+            }
+        }, threadName).start();
+    }
+
+    /** 表批量操作函数式接口 */
+    @FunctionalInterface
+    private interface TableBatchAction {
+        void execute(ConnectionConfig cfg, String dbName, String schema, List<String> tableNames) throws Exception;
+    }
+
     // ==================== 刷新 ====================
 
     /** 刷新数据库主机：重新加载数据库列表 */
@@ -601,10 +765,18 @@ public abstract class AbstractDbHandler implements ConnectHandler {
                 loadViewsForFolder(item, config, data.getDatabaseName(), data.getSchemaName(), false);
             }
             case QUERY_FOLDER -> {
-                loadQueriesForFolder(item, config, data.getDatabaseName());
+                loadQueriesForFolder(item, config, data.getDatabaseName(), "");
             }
             case BACKUP_FOLDER -> {
-                loadBackupsForFolder(item, config, data.getDatabaseName());
+                loadBackupsForFolder(item, config, data.getDatabaseName(), "");
+            }
+            case QUERY_DIR -> {
+                module.removeDbNodeDataRecursive(item);
+                loadQueriesForFolder(item, config, data.getDatabaseName(), data.getPath());
+            }
+            case BACKUP_DIR -> {
+                module.removeDbNodeDataRecursive(item);
+                loadBackupsForFolder(item, config, data.getDatabaseName(), data.getPath());
             }
             default -> {}
         }
@@ -670,26 +842,117 @@ public abstract class AbstractDbHandler implements ConnectHandler {
         }, "DB-LoadViews").start();
     }
 
-    /** 加载查询列表到指定文件夹节点 */
-    public void loadQueriesForFolder(TreeItem<String> folderItem, ConnectionConfig config, String dbName) {
-        List<String> queryNames = SqlEditorView.listQueries(config.getName(), dbName);
+    /**
+     * 在单个线程中顺序加载表和视图列表，避免两个线程并发使用同一JDBC连接。
+     * JDBC Connection不是线程安全的，并发使用会导致协议损坏和挂起。
+     */
+    public void loadTablesAndViewsForFolder(TreeItem<String> tablesFolder, TreeItem<String> viewsFolder,
+                                             ConnectionConfig config, String dbName, String schemaName, boolean autoExpand) {
+        new Thread(() -> {
+            java.util.concurrent.locks.ReentrantLock connLock = DatabaseService.acquireUsageLock(config, dbName);
+            connLock.lock();
+            try {
+            // 顺序加载表列表
+            try {
+                List<String> tables = DatabaseService.getTables(config, dbName, schemaName);
+                Platform.runLater(() -> {
+                    tablesFolder.getChildren().clear();
+                    for (String tableName : tables) {
+                        TreeItem<String> tableItem = new TreeItem<>(tableName);
+                        DatabaseNodeData tableData = new DatabaseNodeData(DatabaseNodeData.NodeType.TABLE, tableName, config, dbName, schemaName);
+                        tableItem.setGraphic(module.getDbNodeIcon(tableData));
+                        module.getDbNodeDataMap().put(tableItem, tableData);
+                        tablesFolder.getChildren().add(tableItem);
+                    }
+                    tablesFolder.setExpanded(autoExpand);
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setTitle("加载失败");
+                    alert.setHeaderText(null);
+                    alert.setContentText("无法加载表列表: " + e.getMessage());
+                    alert.showAndWait();
+                });
+                e.printStackTrace();
+            }
+
+            // 顺序加载视图列表（在表列表加载完成后，确保不并发使用连接）
+            try {
+                List<String> views = DatabaseService.getViews(config, dbName, schemaName);
+                Platform.runLater(() -> {
+                    viewsFolder.getChildren().clear();
+                    for (String viewName : views) {
+                        TreeItem<String> viewItem = new TreeItem<>(viewName);
+                        DatabaseNodeData viewData = new DatabaseNodeData(DatabaseNodeData.NodeType.VIEW, viewName, config, dbName, schemaName);
+                        viewItem.setGraphic(module.getDbNodeIcon(viewData));
+                        module.getDbNodeDataMap().put(viewItem, viewData);
+                        viewsFolder.getChildren().add(viewItem);
+                    }
+                    viewsFolder.setExpanded(autoExpand);
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setTitle("加载失败");
+                    alert.setHeaderText(null);
+                    alert.setContentText("无法加载视图列表: " + e.getMessage());
+                    alert.showAndWait();
+                });
+                e.printStackTrace();
+            }
+            } finally {
+                connLock.unlock();
+            }
+        }, "DB-LoadTablesAndViews").start();
+    }
+
+    /** 加载查询列表（含子目录）到指定文件夹节点。path 为相对 query 根目录的相对路径，""表示根 */
+    public void loadQueriesForFolder(TreeItem<String> folderItem, ConnectionConfig config, String dbName, String path) {
+        String currentPath = path == null ? "" : path;
         folderItem.getChildren().clear();
-        for (String queryName : queryNames) {
+
+        // 先加载子目录
+        for (String dirName : SqlEditorView.listQueryDirs(config.getName(), dbName, currentPath)) {
+            String dirPath = currentPath.isEmpty() ? dirName : currentPath + "/" + dirName;
+            TreeItem<String> dirItem = new TreeItem<>(dirName);
+            DatabaseNodeData dirData = new DatabaseNodeData(DatabaseNodeData.NodeType.QUERY_DIR, dirName, config, dbName, null, dirPath);
+            dirItem.setGraphic(module.getDbNodeIcon(dirData));
+            module.getDbNodeDataMap().put(dirItem, dirData);
+            folderItem.getChildren().add(dirItem);
+        }
+
+        // 再加载查询文件
+        for (String queryName : SqlEditorView.listQueries(config.getName(), dbName, currentPath)) {
             TreeItem<String> queryItem = new TreeItem<>(queryName);
-            queryItem.setGraphic(module.getDbNodeIcon(new DatabaseNodeData(DatabaseNodeData.NodeType.QUERY, queryName, config, dbName)));
-            module.getDbNodeDataMap().put(queryItem, new DatabaseNodeData(DatabaseNodeData.NodeType.QUERY, queryName, config, dbName));
+            DatabaseNodeData queryData = new DatabaseNodeData(DatabaseNodeData.NodeType.QUERY, queryName, config, dbName, null, currentPath);
+            queryItem.setGraphic(module.getDbNodeIcon(queryData));
+            module.getDbNodeDataMap().put(queryItem, queryData);
             folderItem.getChildren().add(queryItem);
         }
     }
 
-    /** 加载备份列表到指定文件夹节点 */
-    public void loadBackupsForFolder(TreeItem<String> folderItem, ConnectionConfig config, String dbName) {
-        List<String> backupNames = BackupService.listBackups(config.getName(), dbName);
+    /** 加载备份列表（含子目录）到指定文件夹节点。path 为相对 backup 根目录的相对路径，""表示根 */
+    public void loadBackupsForFolder(TreeItem<String> folderItem, ConnectionConfig config, String dbName, String path) {
+        String currentPath = path == null ? "" : path;
         folderItem.getChildren().clear();
-        for (String backupName : backupNames) {
+
+        // 先加载子目录
+        for (String dirName : BackupService.listBackupDirs(config.getName(), dbName, currentPath)) {
+            String dirPath = currentPath.isEmpty() ? dirName : currentPath + "/" + dirName;
+            TreeItem<String> dirItem = new TreeItem<>(dirName);
+            DatabaseNodeData dirData = new DatabaseNodeData(DatabaseNodeData.NodeType.BACKUP_DIR, dirName, config, dbName, null, dirPath);
+            dirItem.setGraphic(module.getDbNodeIcon(dirData));
+            module.getDbNodeDataMap().put(dirItem, dirData);
+            folderItem.getChildren().add(dirItem);
+        }
+
+        // 再加载备份文件
+        for (String backupName : BackupService.listBackups(config.getName(), dbName, currentPath)) {
             TreeItem<String> backupItem = new TreeItem<>(backupName);
-            backupItem.setGraphic(module.getDbNodeIcon(new DatabaseNodeData(DatabaseNodeData.NodeType.BACKUP, backupName, config, dbName)));
-            module.getDbNodeDataMap().put(backupItem, new DatabaseNodeData(DatabaseNodeData.NodeType.BACKUP, backupName, config, dbName));
+            DatabaseNodeData backupData = new DatabaseNodeData(DatabaseNodeData.NodeType.BACKUP, backupName, config, dbName, null, currentPath);
+            backupItem.setGraphic(module.getDbNodeIcon(backupData));
+            module.getDbNodeDataMap().put(backupItem, backupData);
             folderItem.getChildren().add(backupItem);
         }
     }
@@ -723,19 +986,19 @@ public abstract class AbstractDbHandler implements ConnectHandler {
         queryFolder.setGraphic(module.getDbNodeIcon(new DatabaseNodeData(DatabaseNodeData.NodeType.QUERY_FOLDER, "查询", config, dbName)));
         module.getDbNodeDataMap().put(queryFolder, new DatabaseNodeData(DatabaseNodeData.NodeType.QUERY_FOLDER, "查询", config, dbName));
 
-        loadQueriesForFolder(queryFolder, config, dbName);
+        loadQueriesForFolder(queryFolder, config, dbName, "");
 
         TreeItem<String> backupFolder = new TreeItem<>("备份");
         backupFolder.setGraphic(module.getDbNodeIcon(new DatabaseNodeData(DatabaseNodeData.NodeType.BACKUP_FOLDER, "备份", config, dbName)));
         module.getDbNodeDataMap().put(backupFolder, new DatabaseNodeData(DatabaseNodeData.NodeType.BACKUP_FOLDER, "备份", config, dbName));
 
-        loadBackupsForFolder(backupFolder, config, dbName);
+        loadBackupsForFolder(backupFolder, config, dbName, "");
 
         dbItem.getChildren().addAll(tablesFolder, viewsFolder, functionFolder, queryFolder, backupFolder);
         dbItem.setExpanded(true);
 
-        loadTablesForFolder(tablesFolder, config, dbName, null, false);
-        loadViewsForFolder(viewsFolder, config, dbName, null, false);
+        // 使用单线程顺序加载表和视图，避免并发使用同一JDBC连接
+        loadTablesAndViewsForFolder(tablesFolder, viewsFolder, config, dbName, null, false);
     }
 
     /**
@@ -762,26 +1025,207 @@ public abstract class AbstractDbHandler implements ConnectHandler {
         DatabaseNodeData queryData = new DatabaseNodeData(DatabaseNodeData.NodeType.QUERY_FOLDER, "查询", config, dbName, schemaName);
         queryFolder.setGraphic(module.getDbNodeIcon(queryData));
         module.getDbNodeDataMap().put(queryFolder, queryData);
-        loadQueriesForFolder(queryFolder, config, dbName);
+        loadQueriesForFolder(queryFolder, config, dbName, "");
 
         TreeItem<String> backupFolder = new TreeItem<>("备份");
         DatabaseNodeData backupData = new DatabaseNodeData(DatabaseNodeData.NodeType.BACKUP_FOLDER, "备份", config, dbName, schemaName);
         backupFolder.setGraphic(module.getDbNodeIcon(backupData));
         module.getDbNodeDataMap().put(backupFolder, backupData);
-        loadBackupsForFolder(backupFolder, config, dbName);
+        loadBackupsForFolder(backupFolder, config, dbName, "");
 
         schemaItem.getChildren().addAll(tablesFolder, viewsFolder, functionFolder, queryFolder, backupFolder);
     }
 
     // ==================== 文件夹双击：加载表/视图列表 ====================
 
-    /** 双击表文件夹：若已加载则切换展开状态，否则加载表列表 */
+    /** 双击表文件夹：打开对象视图 Tab，并展开节点显示表列表（未加载则先加载） */
     public void handleTablesFolderDoubleClick(TreeItem<String> folderItem, DatabaseNodeData data) {
-        if (!folderItem.getChildren().isEmpty()) {
-            folderItem.setExpanded(!folderItem.isExpanded());
-            return;
+        // 打开对象视图 Tab（已存在则激活）
+        openObjectsView(folderItem, data);
+
+        if (folderItem.getChildren().isEmpty()) {
+            loadTablesForFolder(folderItem, data.getConnectionConfig(), data.getDatabaseName(), data.getSchemaName(), true);
+        } else {
+            // 已加载则展开节点，方便查看表列表
+            folderItem.setExpanded(true);
         }
-        loadTablesForFolder(folderItem, data.getConnectionConfig(), data.getDatabaseName(), data.getSchemaName(), true);
+    }
+
+    /**
+     * 打开对象视图 Tab：展示当前数据库/Schema 的所有表和视图对象。
+     * 支持 Tab 去重（相同 schema 的对象视图只开一个），且 Tab 不可关闭。
+     */
+    public void openObjectsView(TreeItem<String> folderItem, DatabaseNodeData data) {
+        if (module.getTerminalTabPane() == null) return;
+        if (!module.ensureTabPaneInstalled()) return;
+
+        String tabId = "objects_" + data.getConnectionConfig().getId() + "_" + data.getDatabaseName()
+                + (data.getSchemaName() != null ? "_" + data.getSchemaName() : "");
+        for (Tab tab : module.getTerminalTabPane().getTabs()) {
+            if (tabId.equals(tab.getUserData())) {
+                module.getTerminalTabPane().getSelectionModel().select(tab);
+                module.showDataView();
+                return;
+            }
+        }
+
+        // 创建视图，注入对象操作回调（复用 handler 已有的去重/业务逻辑）
+        // 使用 holder 数组避免"变量尚未初始化"错误（匿名内部类需在构造时引用视图自身）
+        final TableObjectsView[] holder = new TableObjectsView[1];
+        TableObjectsView objectsView = new TableObjectsView(
+                data.getConnectionConfig(), data.getDatabaseName(), data.getSchemaName(),
+                new TableObjectsView.ObjectOperations() {
+                    @Override
+                    public void openObject(DatabaseNodeData objData) {
+                        handleTableDataDoubleClick(folderItem, objData);
+                    }
+
+                    @Override
+                    public void designObject(DatabaseNodeData objData) {
+                        handleTableStructureDoubleClick(folderItem, objData);
+                    }
+
+                    @Override
+                    public void createTable() {
+                        handleNewTable(folderItem, data);
+                    }
+
+                    @Override
+                    public void deleteObjects(List<DatabaseNodeData> dataList) {
+                        handleDeleteObjects(dataList, () -> {
+                            if (holder[0] != null) holder[0].notifyObjectDeleted();
+                        });
+                    }
+
+                    @Override
+                    public void clearTables(List<DatabaseNodeData> dataList) {
+                        handleClearTables(dataList, () -> {
+                            if (holder[0] != null) holder[0].notifyObjectDeleted();
+                        });
+                    }
+
+                    @Override
+                    public void truncateTables(List<DatabaseNodeData> dataList) {
+                        handleTruncateTables(dataList, () -> {
+                            if (holder[0] != null) holder[0].notifyObjectDeleted();
+                        });
+                    }
+
+                    @Override
+                    public void renameObject(DatabaseNodeData objData, String newName, Runnable onSuccess) {
+                        handleRenameObject(folderItem, data, objData, newName, onSuccess);
+                    }
+
+                    @Override
+                    public void importWizard() {
+                        handleRestoreBackup(null, data);
+                    }
+
+                    @Override
+                    public void exportWizard() {
+                        module.handleNewBackup(folderItem, data);
+                    }
+
+                    @Override
+                    public void pasteTables() {
+                        // 目标为当前对象视图对应的连接/数据库
+                        handlePasteTables(folderItem, data, () -> {
+                            if (holder[0] != null) holder[0].notifyObjectDeleted();
+                        });
+                    }
+                });
+        holder[0] = objectsView;
+
+        ConnectionConfig config = data.getConnectionConfig();
+        String tabTitle = "对象@" + data.getDatabaseName()
+                + (data.getSchemaName() != null ? "/" + data.getSchemaName() : "")
+                + "(" + config.getHost() + ":" + config.getPort() + ")";
+        Tab tab = new Tab(tabTitle);
+        try {
+            Image folderIcon = new Image(getClass().getResourceAsStream("/images/connect/folder.png"));
+            if (folderIcon != null) {
+                ImageView tabIconView = new ImageView(folderIcon);
+                tabIconView.setFitWidth(18);
+                tabIconView.setFitHeight(18);
+                tab.setGraphic(ConnectModule.createFixedSizeGraphic(tabIconView));
+            }
+        } catch (Exception ignored) {}
+        tab.setContent(objectsView);
+        tab.setUserData(tabId);
+        tab.setClosable(false);  // 不可关闭
+
+        // 右键菜单：仅刷新
+        ContextMenu ctxMenu = new ContextMenu();
+        MenuItem refreshItem = new MenuItem("刷新对象");
+        refreshItem.setOnAction(e -> objectsView.refreshData());
+        ctxMenu.getItems().add(refreshItem);
+        appendCloseMenuItems(tab, ctxMenu);
+        tab.setContextMenu(ctxMenu);
+
+        module.getTerminalTabPane().getTabs().add(tab);
+        module.getTerminalTabPane().getSelectionModel().select(tab);
+        module.showDataView();
+    }
+
+    /**
+     * 重命名表/视图：调用 DatabaseService 执行重命名，更新树节点，刷新对象视图。
+     */
+    public void handleRenameObject(TreeItem<String> folderItem, DatabaseNodeData folderData,
+                                    DatabaseNodeData objData, String newName, Runnable onSuccess) {
+        ConnectionConfig config = objData.getConnectionConfig();
+        String dbName = objData.getDatabaseName();
+        String schemaName = objData.getSchemaName();
+        String oldName = objData.getName();
+        boolean isTable = objData.getType() == DatabaseNodeData.NodeType.TABLE;
+
+        new Thread(() -> {
+            try {
+                if (isTable) {
+                    DatabaseService.renameTable(config, dbName, schemaName, oldName, newName);
+                } else {
+                    DatabaseService.renameView(config, dbName, schemaName, oldName, newName);
+                }
+                Platform.runLater(() -> {
+                    // 更新树节点：查找并更新表/视图节点的名称
+                    updateTreeNodeName(folderItem, oldName, newName, config, dbName, schemaName);
+                    // 回调刷新对象视图
+                    if (onSuccess != null) onSuccess.run();
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setTitle("重命名失败");
+                    alert.setHeaderText(null);
+                    alert.setContentText("重命名失败: " + e.getMessage());
+                    DialogPositionUtil.centerOnOwner(alert, module.getStage());
+                    alert.showAndWait();
+                });
+                e.printStackTrace();
+            }
+        }, "DB-RenameFromObjects").start();
+    }
+
+    /**
+     * 查找树中表/视图节点并更新名称。
+     * 在 folderItem 的子节点中查找名称匹配的节点，更新其值和 dbNodeDataMap。
+     */
+    private void updateTreeNodeName(TreeItem<String> folderItem, String oldName, String newName,
+                                     ConnectionConfig config, String dbName, String schemaName) {
+        // folderItem 是"表"或"视图"文件夹，遍历其子节点查找匹配的表/视图
+        for (TreeItem<String> child : folderItem.getChildren()) {
+            if (oldName.equals(child.getValue())) {
+                child.setValue(newName);
+                DatabaseNodeData oldData = module.getDbNodeDataMap().get(child);
+                if (oldData != null) {
+                    DatabaseNodeData newData = new DatabaseNodeData(
+                            oldData.getType(), newName, config, dbName,
+                            schemaName != null ? schemaName : null);
+                    module.getDbNodeDataMap().put(child, newData);
+                }
+                child.getChildren().clear();
+                return;
+            }
+        }
     }
 
     /** 双击视图文件夹：若已加载则切换展开状态，否则加载视图列表 */
@@ -820,17 +1264,24 @@ public abstract class AbstractDbHandler implements ConnectHandler {
             ImageView tabIconView = new ImageView(tableIcon);
             tabIconView.setFitWidth(18);
             tabIconView.setFitHeight(18);
-            tab.setGraphic(tabIconView);
+            tab.setGraphic(ConnectModule.createFixedSizeGraphic(tabIconView));
         }
         tab.setContent(structView);
         tab.setUserData(tabId);
 
         // 新建表保存成功后：更新 tab 标题/userData（切换为设计表标识）并刷新表树
         final Tab finalTab = tab;
+        // 字段脏状态：未保存时Tab标题前加*，保存后去除
+        final String[] baseTitle = {tabTitle};
+        structView.setOnDirtyChange(dirty -> finalTab.setText((dirty ? "*" : "") + baseTitle[0]));
+
         structView.setOnTableCreated(newTableName -> {
-            finalTab.setText(newTableName + "@" + data.getDatabaseName() + "(" + config.getHost() + ":" + config.getPort() + ")-表结构");
+            baseTitle[0] = newTableName + "@" + data.getDatabaseName() + "(" + config.getHost() + ":" + config.getPort() + ")-表结构";
+            finalTab.setText(baseTitle[0]);
             finalTab.setUserData("struct_" + config.getId() + "_" + data.getDatabaseName() + "_" + newTableName);
             refreshDbNode(item, data);
+            // 同步刷新已打开的对象视图列表，使新建的表立即出现
+            refreshObjectsView(data);
         });
 
         ContextMenu structTabContextMenu = new ContextMenu();
@@ -844,6 +1295,7 @@ public abstract class AbstractDbHandler implements ConnectHandler {
         MenuItem structRefreshItem = new MenuItem("刷新结构");
         structRefreshItem.setOnAction(e -> structView.loadStructure());
         structTabContextMenu.getItems().addAll(structConfigItem, structRefreshItem);
+        appendCloseMenuItems(tab, structTabContextMenu);
         tab.setContextMenu(structTabContextMenu);
 
         tab.setOnClosed(e -> {
@@ -855,6 +1307,23 @@ public abstract class AbstractDbHandler implements ConnectHandler {
         module.getTerminalTabPane().getTabs().add(tab);
         module.getTerminalTabPane().getSelectionModel().select(tab);
         module.showDataView();
+    }
+
+    /**
+     * 刷新与指定连接/数据库/Schema 对应的对象视图 Tab（若已打开）。
+     * 用于新建表等操作成功后，使对象列表自动同步。
+     */
+    private void refreshObjectsView(DatabaseNodeData data) {
+        if (module.getTerminalTabPane() == null) return;
+        ConnectionConfig config = data.getConnectionConfig();
+        String tabId = "objects_" + config.getId() + "_" + data.getDatabaseName()
+                + (data.getSchemaName() != null ? "_" + data.getSchemaName() : "");
+        for (Tab tab : module.getTerminalTabPane().getTabs()) {
+            if (tabId.equals(tab.getUserData()) && tab.getContent() instanceof TableObjectsView objectsView) {
+                objectsView.refreshData();
+                return;
+            }
+        }
     }
 
     /** 设计表：打开表/视图结构 Tab */
@@ -883,10 +1352,14 @@ public abstract class AbstractDbHandler implements ConnectHandler {
             ImageView tabIconView = new ImageView(tabIcon);
             tabIconView.setFitWidth(18);
             tabIconView.setFitHeight(18);
-            tab.setGraphic(tabIconView);
+            tab.setGraphic(ConnectModule.createFixedSizeGraphic(tabIconView));
         }
         tab.setContent(structView);
         tab.setUserData(tabId);
+
+        // 字段脏状态：未保存时Tab标题前加*，保存后去除
+        final String[] baseTitle = {tabTitle};
+        structView.setOnDirtyChange(dirty -> tab.setText((dirty ? "*" : "") + baseTitle[0]));
 
         ContextMenu structTabContextMenu = new ContextMenu();
         MenuItem structConfigItem = new MenuItem("表格配置");
@@ -899,6 +1372,7 @@ public abstract class AbstractDbHandler implements ConnectHandler {
         MenuItem structRefreshItem = new MenuItem("刷新结构");
         structRefreshItem.setOnAction(e -> structView.loadStructure());
         structTabContextMenu.getItems().addAll(structConfigItem, structRefreshItem);
+        appendCloseMenuItems(tab, structTabContextMenu);
         tab.setContextMenu(structTabContextMenu);
 
         tab.setOnClosed(e -> {
@@ -938,7 +1412,7 @@ public abstract class AbstractDbHandler implements ConnectHandler {
             ImageView tabIconView = new ImageView(tabIcon);
             tabIconView.setFitWidth(18);
             tabIconView.setFitHeight(18);
-            tab.setGraphic(tabIconView);
+            tab.setGraphic(ConnectModule.createFixedSizeGraphic(tabIconView));
         }
         tab.setContent(dataView);
         tab.setUserData(tabId);
@@ -954,6 +1428,7 @@ public abstract class AbstractDbHandler implements ConnectHandler {
         MenuItem tableRefreshItem = new MenuItem("刷新数据");
         tableRefreshItem.setOnAction(e -> dataView.refreshData());
         tableTabContextMenu.getItems().addAll(tableConfigItem, tableRefreshItem);
+        appendCloseMenuItems(tab, tableTabContextMenu);
         tab.setContextMenu(tableTabContextMenu);
 
         tab.setOnClosed(e -> {
@@ -965,6 +1440,68 @@ public abstract class AbstractDbHandler implements ConnectHandler {
         module.getTerminalTabPane().getTabs().add(tab);
         module.getTerminalTabPane().getSelectionModel().select(tab);
         module.showDataView();
+    }
+
+    // ==================== Tab 批量关闭 ====================
+
+    /** 向 Tab 右键菜单追加"关闭左侧/关闭右侧/关闭全部"菜单项 */
+    protected void appendCloseMenuItems(Tab currentTab, ContextMenu contextMenu) {
+        MenuItem closeLeftItem = new MenuItem("关闭左侧");
+        MenuItem closeRightItem = new MenuItem("关闭右侧");
+        MenuItem closeAllItem = new MenuItem("关闭全部");
+
+        closeLeftItem.setOnAction(e -> closeTabsBySide(currentTab, true));
+        closeRightItem.setOnAction(e -> closeTabsBySide(currentTab, false));
+        closeAllItem.setOnAction(e -> closeAllClosableTabs());
+
+        contextMenu.getItems().addAll(new SeparatorMenuItem(), closeLeftItem, closeRightItem, closeAllItem);
+
+        // 菜单显示前更新禁用状态
+        contextMenu.setOnShowing(e -> {
+            TabPane pane = module.getTerminalTabPane();
+            if (pane == null) return;
+            int idx = pane.getTabs().indexOf(currentTab);
+            closeLeftItem.setDisable(idx <= 0);
+            closeRightItem.setDisable(idx < 0 || idx >= pane.getTabs().size() - 1);
+        });
+    }
+
+    /** 关闭 currentTab 左侧或右侧的全部可关闭 Tab */
+    private void closeTabsBySide(Tab currentTab, boolean left) {
+        TabPane pane = module.getTerminalTabPane();
+        if (pane == null) return;
+        int idx = pane.getTabs().indexOf(currentTab);
+        if (idx < 0) return;
+        List<Tab> toClose;
+        if (left) {
+            if (idx == 0) return;
+            toClose = new ArrayList<>(pane.getTabs().subList(0, idx));
+        } else {
+            if (idx >= pane.getTabs().size() - 1) return;
+            toClose = new ArrayList<>(pane.getTabs().subList(idx + 1, pane.getTabs().size()));
+        }
+        for (Tab t : toClose) closeTabProgrammatically(t);
+    }
+
+    /** 关闭全部可关闭 Tab */
+    private void closeAllClosableTabs() {
+        TabPane pane = module.getTerminalTabPane();
+        if (pane == null) return;
+        List<Tab> toClose = new ArrayList<>(pane.getTabs());
+        for (Tab t : toClose) closeTabProgrammatically(t);
+    }
+
+    /**
+     * 程序化关闭单个 Tab：触发 onCloseRequest（可被消费阻止），移除 Tab，触发 onClosed（释放连接/隧道等资源）。
+     * 跳过不可关闭的 Tab（setClosable(false)）。
+     */
+    private void closeTabProgrammatically(Tab tab) {
+        if (!tab.isClosable()) return;
+        Event closeRequestEvent = new Event(tab, tab, Tab.TAB_CLOSE_REQUEST_EVENT);
+        Event.fireEvent(tab, closeRequestEvent);
+        if (closeRequestEvent.isConsumed()) return;
+        module.getTerminalTabPane().getTabs().remove(tab);
+        Event.fireEvent(tab, new Event(tab, tab, Tab.CLOSED_EVENT));
     }
 
     // ==================== 右键菜单 ====================
@@ -992,7 +1529,11 @@ public abstract class AbstractDbHandler implements ConnectHandler {
                 deleteDbItem.setOnAction(e -> handleDeleteDatabase(item, data));
                 MenuItem refreshItem = new MenuItem("刷新");
                 refreshItem.setOnAction(e -> refreshDbNode(item, data));
-                contextMenu.getItems().addAll(new SeparatorMenuItem(), editDbItem, deleteDbItem, new SeparatorMenuItem(), refreshItem);
+                // 粘贴表：剪贴板中有 TOMATO_COPY_TABLES 内容时启用
+                MenuItem pasteTablesItem = new MenuItem("粘贴表");
+                pasteTablesItem.setOnAction(e -> handlePasteTables(item, data));
+                pasteTablesItem.setDisable(!isClipboardHasTables());
+                contextMenu.getItems().addAll(new SeparatorMenuItem(), editDbItem, deleteDbItem, new SeparatorMenuItem(), pasteTablesItem, new SeparatorMenuItem(), refreshItem);
             }
             case SCHEMA -> {
                 MenuItem openItem = new MenuItem("打开");
@@ -1002,11 +1543,17 @@ public abstract class AbstractDbHandler implements ConnectHandler {
                 contextMenu.getItems().addAll(openItem, new SeparatorMenuItem(), refreshItem);
             }
             case TABLES_FOLDER -> {
+                MenuItem openObjectsItem = new MenuItem("打开对象");
+                openObjectsItem.setOnAction(e -> openObjectsView(item, data));
                 MenuItem newTableItem = new MenuItem("新建表");
                 newTableItem.setOnAction(e -> handleNewTable(item, data));
                 MenuItem refreshItem = new MenuItem("刷新");
                 refreshItem.setOnAction(e -> refreshDbNode(item, data));
-                contextMenu.getItems().addAll(newTableItem, new SeparatorMenuItem(), refreshItem);
+                // 粘贴表：剪贴板中有 TOMATO_COPY_TABLES 内容时启用
+                MenuItem pasteTablesItem = new MenuItem("粘贴表");
+                pasteTablesItem.setOnAction(e -> handlePasteTables(item, data));
+                pasteTablesItem.setDisable(!isClipboardHasTables());
+                contextMenu.getItems().addAll(openObjectsItem, new SeparatorMenuItem(), newTableItem, new SeparatorMenuItem(), pasteTablesItem, new SeparatorMenuItem(), refreshItem);
             }
             case VIEWS_FOLDER -> {
                 MenuItem refreshItem = new MenuItem("刷新");
@@ -1016,25 +1563,57 @@ public abstract class AbstractDbHandler implements ConnectHandler {
             case QUERY_FOLDER -> {
                 MenuItem newQueryItem = new MenuItem("新建查询");
                 newQueryItem.setOnAction(e -> handleNewQuery(item, data));
+                MenuItem newDirItem = new MenuItem("新建目录");
+                newDirItem.setOnAction(e -> handleNewQueryDir(item, data));
                 MenuItem refreshItem = new MenuItem("刷新");
                 refreshItem.setOnAction(e -> refreshDbNode(item, data));
-                contextMenu.getItems().addAll(newQueryItem, new SeparatorMenuItem(), refreshItem);
+                contextMenu.getItems().addAll(newQueryItem, newDirItem, new SeparatorMenuItem(), refreshItem);
             }
             case BACKUP_FOLDER -> {
                 MenuItem newBackupItem = new MenuItem("新建备份");
                 newBackupItem.setOnAction(e -> module.handleNewBackup(item, data));
+                MenuItem newDirItem = new MenuItem("新建目录");
+                newDirItem.setOnAction(e -> handleNewBackupDir(item, data));
                 MenuItem refreshItem = new MenuItem("刷新");
                 refreshItem.setOnAction(e -> refreshDbNode(item, data));
-                contextMenu.getItems().addAll(newBackupItem, new SeparatorMenuItem(), refreshItem);
+                contextMenu.getItems().addAll(newBackupItem, newDirItem, new SeparatorMenuItem(), refreshItem);
+            }
+            case QUERY_DIR -> {
+                MenuItem newQueryItem = new MenuItem("新建查询");
+                newQueryItem.setOnAction(e -> handleNewQuery(item, data));
+                MenuItem newDirItem = new MenuItem("新建目录");
+                newDirItem.setOnAction(e -> handleNewQueryDir(item, data));
+                MenuItem renameItem = new MenuItem("重命名");
+                renameItem.setOnAction(e -> handleRenameQueryDir(item, data));
+                MenuItem deleteItem = new MenuItem("删除");
+                deleteItem.setOnAction(e -> handleDeleteQueryDir(item, data));
+                MenuItem refreshItem = new MenuItem("刷新");
+                refreshItem.setOnAction(e -> refreshDbNode(item, data));
+                contextMenu.getItems().addAll(newQueryItem, newDirItem, new SeparatorMenuItem(), renameItem, deleteItem, new SeparatorMenuItem(), refreshItem);
+            }
+            case BACKUP_DIR -> {
+                MenuItem newBackupItem = new MenuItem("新建备份");
+                newBackupItem.setOnAction(e -> module.handleNewBackup(item, data));
+                MenuItem newDirItem = new MenuItem("新建目录");
+                newDirItem.setOnAction(e -> handleNewBackupDir(item, data));
+                MenuItem renameItem = new MenuItem("重命名");
+                renameItem.setOnAction(e -> handleRenameBackupDir(item, data));
+                MenuItem deleteItem = new MenuItem("删除");
+                deleteItem.setOnAction(e -> handleDeleteBackupDir(item, data));
+                MenuItem refreshItem = new MenuItem("刷新");
+                refreshItem.setOnAction(e -> refreshDbNode(item, data));
+                contextMenu.getItems().addAll(newBackupItem, newDirItem, new SeparatorMenuItem(), renameItem, deleteItem, new SeparatorMenuItem(), refreshItem);
             }
             case TABLE, VIEW -> {
+                MenuItem openTableItem = new MenuItem("打开表");
+                openTableItem.setOnAction(e -> handleTableDataDoubleClick(item, data));
                 MenuItem designItem = new MenuItem("设计表");
                 designItem.setOnAction(e -> handleTableStructureDoubleClick(item, data));
-                MenuItem openDataItem = new MenuItem("打开数据");
-                openDataItem.setOnAction(e -> handleTableDataDoubleClick(item, data));
+                MenuItem copyTableItem = new MenuItem("复制表");
+                copyTableItem.setOnAction(e -> handleCopyTable(item, data));
                 MenuItem deleteItem = new MenuItem("删除");
                 deleteItem.setOnAction(e -> module.deleteDbNodes());
-                contextMenu.getItems().addAll(designItem, openDataItem, new SeparatorMenuItem(), deleteItem);
+                contextMenu.getItems().addAll(openTableItem, designItem, new SeparatorMenuItem(), copyTableItem, new SeparatorMenuItem(), deleteItem);
             }
             case QUERY -> {
                 MenuItem openQueryItem = new MenuItem("打开");
@@ -1071,27 +1650,70 @@ public abstract class AbstractDbHandler implements ConnectHandler {
 
     /** 关闭数据库节点：清理子节点数据并恢复未打开状态 */
     public void closeDatabase(TreeItem<String> dbItem, DatabaseNodeData data) {
-        module.removeDbNodeDataRecursive(dbItem);
+        // 仅清理子节点的映射，保留 dbItem 自身的 dbNodeDataMap 映射，
+        // 否则关闭后双击该节点时 dbNodeDataMap.get(dbItem) 返回 null，无法触发 openDatabase 重新打开
+        for (TreeItem<String> child : dbItem.getChildren()) {
+            module.removeDbNodeDataRecursive(child);
+        }
         dbItem.getChildren().clear();
         data.setOpened(false);
         dbItem.setGraphic(module.getDbNodeIcon(data));
         dbItem.setExpanded(false);
+
+        // 关闭该数据库对应的所有标签：
+        //   - 对象标签（setClosable(false) 不可手动关闭，必须程序清理）
+        //   - 表数据标签（tabId 无前缀: configId_dbName[_schemaName]_tableName）
+        //   - 表结构/设计标签（tabId: struct_configId_dbName[_schemaName]_tableName）
+        //   - 新建表标签（tabId: newtable_configId_dbName[_schemaName]）
+        // 注意：查询标签（query_*）独立于数据库打开状态，不在此处关闭
+        if (module.getTerminalTabPane() != null
+                && data.getConnectionConfig() != null
+                && data.getDatabaseName() != null) {
+            String configId = data.getConnectionConfig().getId();
+            String dbName = data.getDatabaseName();
+            // 4 种基础前缀（MySQL 无 schema 直接匹配；PostgreSQL/Oracle 带 schema 也会以此开头）
+            String basePrefix = configId + "_" + dbName + "_";           // 表数据
+            String objectsPrefix = "objects_" + configId + "_" + dbName; // 对象（精确 + 带 schema 前缀）
+            String structPrefix = "struct_" + basePrefix;                // 表结构
+            String newtablePrefix = "newtable_" + basePrefix;            // 新建表
+            // MySQL 对象标签无 schema：精确匹配
+            String mysqlObjectsTabId = "objects_" + configId + "_" + dbName;
+
+            ObservableList<Tab> tabs = module.getTerminalTabPane().getTabs();
+            tabs.removeIf(t -> {
+                Object ud = t.getUserData();
+                if (ud instanceof String tabId) {
+                    return tabId.equals(mysqlObjectsTabId)        // MySQL 对象标签
+                            || tabId.startsWith(objectsPrefix + "_") // PostgreSQL/Oracle 对象标签（带 schema）
+                            || tabId.startsWith(basePrefix)          // 表数据标签
+                            || tabId.startsWith(structPrefix)        // 表结构/设计标签
+                            || tabId.startsWith(newtablePrefix);     // 新建表标签
+                }
+                return false;
+            });
+            if (tabs.isEmpty()) {
+                module.showWelcomeView();
+            }
+        }
     }
 
     /**
-     * MySQL 专用主机图标更新：展开时使用 mysql_open.png，收起时使用 mysql.png，
-     * 已连接时叠加绿色光晕。
+     * MySQL 专用主机图标更新：
+     * 已连接时使用 mysql_open.png（彩色图标），无论展开还是折叠；
+     * 未连接时使用 mysql.png（灰色图标）。
      */
     protected void updateMysqlHostIcon(TreeItem<String> hostItem, ConnectionConfig config) {
         ImageView imageView = new ImageView();
         imageView.setFitWidth(16);
         imageView.setFitHeight(16);
         try {
-            String iconPath = hostItem.isExpanded() ? "/images/connect/mysql_open.png" : "/images/connect/mysql.png";
+            boolean connected = module.isHostConnected(hostItem);
+            // 根据连接状态选择图标：已连接用彩色图标，未连接用灰色图标
+            String iconPath = connected ? "/images/connect/mysql_open.png" : "/images/connect/mysql.png";
             Image icon = new Image(getClass().getResourceAsStream(iconPath));
             if (icon != null) {
                 imageView.setImage(icon);
-                if (module.isHostConnected(hostItem)) {
+                if (connected) {
                     imageView.setStyle("-fx-effect: dropshadow(gaussian, #4CAF50, 2, 0.5, 0, 0);");
                 }
             }
@@ -1101,14 +1723,278 @@ public abstract class AbstractDbHandler implements ConnectHandler {
         hostItem.setGraphic(imageView);
     }
 
+    // ==================== 复制表 ====================
+
+    /**
+     * 复制表处理：
+     *  - 打开配置对话框（CopyTableDialog）让用户选择目标连接/数据库/表名
+     *  - 同连接直接复制（CREATE TABLE LIKE + INSERT SELECT）
+     *  - 跨连接迁移（DDL + 分页迁移数据）
+     */
+    public void handleCopyTable(TreeItem<String> tableItem, DatabaseNodeData data) {
+        ConnectionConfig srcConfig = data.getConnectionConfig();
+        String srcDb = data.getDatabaseName();
+        String srcSchema = data.getSchemaName();
+        String srcTable = data.getName();
+        if (srcConfig == null || srcDb == null || srcTable == null) {
+            return;
+        }
+
+        // 1. 打开数据传输配置对话框
+        CopyTableDialog dialog = new CopyTableDialog(
+                module.getStage(),
+                module.getConnections(),
+                srcConfig, srcDb, srcSchema, java.util.Collections.singletonList(srcTable)
+        );
+        dialog.showAndWait();
+        if (!dialog.isConfirmed()) {
+            return;
+        }
+
+        ConnectionConfig dstConfig = dialog.getTargetConfig();
+        String dstDb = dialog.getTargetDatabase();
+        String dstSchema = dialog.getTargetSchema();
+        boolean copyStructure = dialog.isCopyStructure();
+        boolean copyData = dialog.isCopyData();
+        boolean dropIfExists = dialog.isDropIfExists();
+
+        if (dstConfig == null || dstDb == null) {
+            return;
+        }
+
+        // 2. 后台执行复制操作（单表/多表统一走批量复制）
+        final List<String> srcTables = dialog.getSourceTables();
+        final List<String> dstTables = dialog.getTargetTables();
+        new Thread(() -> {
+            try {
+                DatabaseService.copyTables(
+                        srcConfig, srcDb, srcSchema, srcTables,
+                        dstConfig, dstDb, dstSchema, dstTables,
+                        copyStructure, copyData, dropIfExists
+                );
+                Platform.runLater(() -> {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "表复制成功！", ButtonType.OK);
+                    alert.setTitle("复制表");
+                    alert.setHeaderText(null);
+                    alert.initOwner(module.getStage());
+                    alert.showAndWait();
+
+                    // 刷新目标数据库节点
+                    refreshDbNodeForConfig(dstConfig, dstDb, dstSchema);
+                });
+            } catch (Exception ex) {
+                String errMsg = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
+                Platform.runLater(() -> {
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "表复制失败: " + errMsg, ButtonType.OK);
+                    alert.setTitle("复制表");
+                    alert.setHeaderText(null);
+                    alert.initOwner(module.getStage());
+                    alert.showAndWait();
+                });
+            }
+        }, "DB-CopyTable").start();
+    }
+
+    /** 判断系统剪贴板中是否有 TOMATO_COPY_TABLES 内容 */
+    private boolean isClipboardHasTables() {
+        Clipboard cb = Clipboard.getSystemClipboard();
+        if (cb.hasContent(TableObjectsView.COPY_TABLES_FORMAT)) {
+            return true;
+        }
+        // 兼容纯文本模式（跨进程/重启后）
+        if (cb.hasString()) {
+            String s = cb.getString();
+            return s != null && s.startsWith(TableObjectsView.COPY_TABLES_PREFIX + "\n");
+        }
+        return false;
+    }
+
+    /**
+     * 粘贴表处理：从剪贴板读取复制的表元信息，弹出数据传输对话框进行批量复制。
+     * 目标连接/数据库由用户在对话框中选择；目标 schema 由目标数据库类型推断。
+     */
+    public void handlePasteTables(TreeItem<String> targetItem, DatabaseNodeData targetData) {
+        handlePasteTables(targetItem, targetData, null);
+    }
+
+    /**
+     * 粘贴表处理（带完成回调）：传输成功或失败后在 JavaFX 线程回调 onComplete。
+     */
+    public void handlePasteTables(TreeItem<String> targetItem, DatabaseNodeData targetData, Runnable onComplete) {
+        Clipboard cb = Clipboard.getSystemClipboard();
+        String content = null;
+        if (cb.hasContent(TableObjectsView.COPY_TABLES_FORMAT)) {
+            Object raw = cb.getContent(TableObjectsView.COPY_TABLES_FORMAT);
+            if (raw instanceof String s) content = s;
+        }
+        if (content == null && cb.hasString()) {
+            String s = cb.getString();
+            if (s != null && s.startsWith(TableObjectsView.COPY_TABLES_PREFIX + "\n")) {
+                content = s;
+            }
+        }
+        if (content == null) {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION, "剪贴板中没有可粘贴的表", ButtonType.OK);
+            alert.setTitle("粘贴表");
+            alert.setHeaderText(null);
+            alert.initOwner(module.getStage());
+            alert.showAndWait();
+            return;
+        }
+
+        // 解析剪贴板内容：TOMATO_COPY_TABLES\n{connId}\n{srcDb}\n{srcSchema}\n{table1}\n{table2}...
+        String[] lines = content.split("\n", -1);
+        if (lines.length < 5) {
+            Alert alert = new Alert(Alert.AlertType.WARNING, "剪贴板内容格式不正确", ButtonType.OK);
+            alert.setTitle("粘贴表");
+            alert.setHeaderText(null);
+            alert.initOwner(module.getStage());
+            alert.showAndWait();
+            return;
+        }
+        String srcConnId = lines[1];
+        String srcDb = lines[2];
+        String srcSchema = lines[3].isEmpty() ? null : lines[3];
+        List<String> srcTables = new ArrayList<>();
+        for (int i = 4; i < lines.length; i++) {
+            if (!lines[i].isEmpty()) {
+                srcTables.add(lines[i]);
+            }
+        }
+        if (srcTables.isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.WARNING, "剪贴板中没有表可粘贴", ButtonType.OK);
+            alert.setTitle("粘贴表");
+            alert.setHeaderText(null);
+            alert.initOwner(module.getStage());
+            alert.showAndWait();
+            return;
+        }
+
+        // 根据 connId 在连接列表中反查源连接配置
+        ConnectionConfig srcConfig = null;
+        if (srcConnId != null && !srcConnId.isEmpty()) {
+            for (ConnectionConfig cfg : module.getConnections()) {
+                if (srcConnId.equals(cfg.getId())) {
+                    srcConfig = cfg;
+                    break;
+                }
+            }
+        }
+        if (srcConfig == null) {
+            Alert alert = new Alert(Alert.AlertType.WARNING, "找不到源连接（可能已被删除）", ButtonType.OK);
+            alert.setTitle("粘贴表");
+            alert.setHeaderText(null);
+            alert.initOwner(module.getStage());
+            alert.showAndWait();
+            return;
+        }
+
+        // 判断源和目标是否同一连接：同一连接直接传输，不弹对话框
+        ConnectionConfig targetCfg = targetData != null ? targetData.getConnectionConfig() : null;
+        if (targetCfg != null && targetData.getDatabaseName() != null
+                && srcConfig.getId() != null && srcConfig.getId().equals(targetCfg.getId())) {
+            // 同一连接：直接进行传输
+            executePasteTablesCopy(srcConfig, srcDb, srcSchema, srcTables,
+                    targetCfg, targetData.getDatabaseName(), targetData.getSchemaName(),
+                    new ArrayList<>(srcTables), true, true, false, onComplete);
+            return;
+        }
+
+        // 不同连接：打开数据传输配置对话框（目标默认为当前右键的数据库节点）
+        CopyTableDialog dialog = new CopyTableDialog(
+                module.getStage(),
+                module.getConnections(),
+                srcConfig, srcDb, srcSchema, srcTables
+        );
+        // 若右键的是 DATABASE/TABLES_FOLDER 节点，预填目标为该节点对应的连接/数据库
+        if (targetData != null && targetData.getConnectionConfig() != null && targetData.getDatabaseName() != null) {
+            dialog.presetTarget(targetData.getConnectionConfig(), targetData.getDatabaseName(), targetData.getSchemaName());
+        }
+        dialog.showAndWait();
+        if (!dialog.isConfirmed()) {
+            return;
+        }
+
+        ConnectionConfig dstConfig = dialog.getTargetConfig();
+        String dstDb = dialog.getTargetDatabase();
+        String dstSchema = dialog.getTargetSchema();
+        boolean copyStructure = dialog.isCopyStructure();
+        boolean copyData = dialog.isCopyData();
+        boolean dropIfExists = dialog.isDropIfExists();
+        if (dstConfig == null || dstDb == null) {
+            return;
+        }
+
+        executePasteTablesCopy(srcConfig, srcDb, srcSchema, dialog.getSourceTables(),
+                dstConfig, dstDb, dstSchema, dialog.getTargetTables(),
+                copyStructure, copyData, dropIfExists, onComplete);
+    }
+
+    /** 后台执行表粘贴/复制操作 */
+    private void executePasteTablesCopy(
+            ConnectionConfig srcConfig, String srcDb, String srcSchema, List<String> srcTables,
+            ConnectionConfig dstConfig, String dstDb, String dstSchema, List<String> dstTables,
+            boolean copyStructure, boolean copyData, boolean dropIfExists, Runnable onComplete) {
+        new Thread(() -> {
+            try {
+                DatabaseService.copyTables(
+                        srcConfig, srcDb, srcSchema, srcTables,
+                        dstConfig, dstDb, dstSchema, dstTables,
+                        copyStructure, copyData, dropIfExists
+                );
+                Platform.runLater(() -> {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "表粘贴成功！", ButtonType.OK);
+                    alert.setTitle("粘贴表");
+                    alert.setHeaderText(null);
+                    alert.initOwner(module.getStage());
+                    alert.showAndWait();
+                    refreshDbNodeForConfig(dstConfig, dstDb, dstSchema);
+                    if (onComplete != null) onComplete.run();
+                });
+            } catch (Exception ex) {
+                String errMsg = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
+                Platform.runLater(() -> {
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "表粘贴失败: " + errMsg, ButtonType.OK);
+                    alert.setTitle("粘贴表");
+                    alert.setHeaderText(null);
+                    alert.initOwner(module.getStage());
+                    alert.showAndWait();
+                    if (onComplete != null) onComplete.run();
+                });
+            }
+        }, "DB-PasteTables").start();
+    }
+
+    /**
+     * 按连接配置+数据库名刷新对应的数据库节点（如果节点已打开）
+     */
+    private void refreshDbNodeForConfig(ConnectionConfig config, String dbName, String schemaName) {
+        if (config == null || dbName == null) return;
+        Map<TreeItem<String>, DatabaseNodeData> dataMap = module.getDbNodeDataMap();
+        for (Map.Entry<TreeItem<String>, DatabaseNodeData> entry : dataMap.entrySet()) {
+            DatabaseNodeData d = entry.getValue();
+            if (d.getType() == DatabaseNodeData.NodeType.DATABASE
+                    && config.getId() != null
+                    && config.getId().equals(d.getConnectionConfig() != null ? d.getConnectionConfig().getId() : null)
+                    && dbName.equals(d.getDatabaseName())) {
+                if (d.isOpened()) {
+                    refreshDbNode(entry.getKey(), d);
+                }
+                return;
+            }
+        }
+    }
+
     // ==================== 查询节点 ====================
 
     /** 新建查询：打开未保存的 SQL 编辑器 Tab，保存时创建查询节点 */
     public void handleNewQuery(TreeItem<String> folderItem, DatabaseNodeData data) {
         ConnectionConfig config = data.getConnectionConfig();
         String dbName = data.getDatabaseName();
+        String path = data.getPath();
 
         SqlEditorView editorView = new SqlEditorView(module.getConnections(), config, dbName);
+        editorView.setPath(path);
 
         Tab tab = new Tab("*未保存查询");
         Image tabIcon = module.getQueryIcon();
@@ -1116,7 +2002,7 @@ public abstract class AbstractDbHandler implements ConnectHandler {
             ImageView tabIconView = new ImageView(tabIcon);
             tabIconView.setFitWidth(14);
             tabIconView.setFitHeight(14);
-            tab.setGraphic(tabIconView);
+            tab.setGraphic(ConnectModule.createFixedSizeGraphic(tabIconView));
         }
 
         String tabId = "query_new_" + System.currentTimeMillis();
@@ -1137,7 +2023,7 @@ public abstract class AbstractDbHandler implements ConnectHandler {
                 editorView.doSave(queryName);
 
                 TreeItem<String> queryItem = new TreeItem<>(queryName);
-                DatabaseNodeData queryData = new DatabaseNodeData(DatabaseNodeData.NodeType.QUERY, queryName, config, dbName);
+                DatabaseNodeData queryData = new DatabaseNodeData(DatabaseNodeData.NodeType.QUERY, queryName, config, dbName, null, path);
                 queryItem.setGraphic(module.getDbNodeIcon(queryData));
                 module.getDbNodeDataMap().put(queryItem, queryData);
                 folderItem.getChildren().add(queryItem);
@@ -1145,7 +2031,7 @@ public abstract class AbstractDbHandler implements ConnectHandler {
 
                 editorView.setQueryNode(queryItem);
 
-                String newTabId = "query_" + config.getId() + "_" + dbName + "_" + queryName;
+                String newTabId = "query_" + config.getId() + "_" + dbName + "_" + path + "_" + queryName;
                 tab.setUserData(newTabId);
             });
         });
@@ -1169,7 +2055,7 @@ public abstract class AbstractDbHandler implements ConnectHandler {
         if (module.getTerminalTabPane() == null) return;
         if (!module.ensureTabPaneInstalled()) return;
 
-        String tabId = "query_" + data.getConnectionConfig().getId() + "_" + data.getDatabaseName() + "_" + data.getName();
+        String tabId = "query_" + data.getConnectionConfig().getId() + "_" + data.getDatabaseName() + "_" + data.getPath() + "_" + data.getName();
         for (Tab tab : module.getTerminalTabPane().getTabs()) {
             if (tabId.equals(tab.getUserData())) {
                 module.getTerminalTabPane().getSelectionModel().select(tab);
@@ -1181,7 +2067,8 @@ public abstract class AbstractDbHandler implements ConnectHandler {
         SqlEditorView editorView = new SqlEditorView(module.getConnections(), data.getConnectionConfig(), data.getDatabaseName());
         editorView.setQueryName(data.getName());
         editorView.setQueryNode(queryItem);
-        editorView.loadFromFile(data.getConnectionConfig().getName(), data.getDatabaseName(), data.getName());
+        editorView.setPath(data.getPath());
+        editorView.loadFromFile(data.getConnectionConfig().getName(), data.getDatabaseName(), data.getName(), data.getPath());
 
         Tab tab = new Tab(data.getName());
         Image tabIcon = module.getQueryIcon();
@@ -1189,7 +2076,7 @@ public abstract class AbstractDbHandler implements ConnectHandler {
             ImageView tabIconView = new ImageView(tabIcon);
             tabIconView.setFitWidth(14);
             tabIconView.setFitHeight(14);
-            tab.setGraphic(tabIconView);
+            tab.setGraphic(ConnectModule.createFixedSizeGraphic(tabIconView));
         }
         tab.setContent(editorView);
         tab.setUserData(tabId);
@@ -1229,15 +2116,14 @@ public abstract class AbstractDbHandler implements ConnectHandler {
             if (name.trim().isEmpty()) return;
             String newName = name.trim();
 
-            String oldSanitizedConn = sanitizeForFs(data.getConnectionConfig().getName());
-            String oldSanitizedDb = sanitizeForFs(data.getDatabaseName());
-            String oldSanitizedQuery = sanitizeForFs(data.getName());
             String newSanitizedQuery = sanitizeForFs(newName);
 
-            java.nio.file.Path oldFile = Paths.get(System.getProperty("user.home") + "/.tomato",
-                    oldSanitizedConn, oldSanitizedDb, "query", oldSanitizedQuery + ".sql");
-            java.nio.file.Path newFile = Paths.get(System.getProperty("user.home") + "/.tomato",
-                    oldSanitizedConn, oldSanitizedDb, "query", newSanitizedQuery + ".sql");
+            java.nio.file.Path oldFile = SqlEditorView.resolveQueryDir(
+                    data.getConnectionConfig().getName(), data.getDatabaseName(), data.getPath())
+                    .resolve(sanitizeForFs(data.getName()) + ".sql");
+            java.nio.file.Path newFile = SqlEditorView.resolveQueryDir(
+                    data.getConnectionConfig().getName(), data.getDatabaseName(), data.getPath())
+                    .resolve(newSanitizedQuery + ".sql");
 
             try {
                 if (Files.exists(oldFile)) {
@@ -1251,7 +2137,7 @@ public abstract class AbstractDbHandler implements ConnectHandler {
             }
 
             queryItem.setValue(newName);
-            DatabaseNodeData newData = new DatabaseNodeData(DatabaseNodeData.NodeType.QUERY, newName, data.getConnectionConfig(), data.getDatabaseName());
+            DatabaseNodeData newData = new DatabaseNodeData(DatabaseNodeData.NodeType.QUERY, newName, data.getConnectionConfig(), data.getDatabaseName(), null, data.getPath());
             module.getDbNodeDataMap().remove(queryItem);
             module.getDbNodeDataMap().put(queryItem, newData);
         });
@@ -1264,7 +2150,7 @@ public abstract class AbstractDbHandler implements ConnectHandler {
         confirm.setHeaderText("确定要删除查询 \"" + data.getName() + "\" 吗？");
         confirm.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
-                SqlEditorView.cleanupQueryFile(data.getConnectionConfig().getName(), data.getDatabaseName(), data.getName());
+                SqlEditorView.cleanupQueryFile(data.getConnectionConfig().getName(), data.getDatabaseName(), data.getName(), data.getPath());
                 module.getDbNodeDataMap().remove(queryItem);
                 queryItem.getParent().getChildren().remove(queryItem);
             }
@@ -1279,16 +2165,14 @@ public abstract class AbstractDbHandler implements ConnectHandler {
         if (stage == null) return;
 
         RestoreDialog dialog = new RestoreDialog(stage,
-                data.getConnectionConfig(), data.getDatabaseName(), data.getName());
+                data.getConnectionConfig(), data.getDatabaseName(), data.getName(), data.getPath());
         dialog.showAndWait();
     }
 
     /** 打开备份所在目录 */
     public void handleOpenBackupDir(DatabaseNodeData data) {
-        String sanitizedConn = sanitizeForFs(data.getConnectionConfig().getName());
-        String sanitizedDb = sanitizeForFs(data.getDatabaseName());
-        java.nio.file.Path backupDir = Paths.get(System.getProperty("user.home") + "/.tomato",
-                sanitizedConn, sanitizedDb, "backup");
+        java.nio.file.Path backupDir = BackupService.resolveBackupDir(
+                data.getConnectionConfig().getName(), data.getDatabaseName(), data.getPath());
         java.nio.file.Path backupFile = backupDir.resolve(data.getName() + ".nb3");
 
         new Thread(() -> {
@@ -1335,10 +2219,10 @@ public abstract class AbstractDbHandler implements ConnectHandler {
             String newName = name.trim();
             try {
                 BackupService.renameBackupFile(data.getConnectionConfig().getName(),
-                        data.getDatabaseName(), data.getName(), newName);
+                        data.getDatabaseName(), data.getName(), newName, data.getPath());
                 backupItem.setValue(newName);
                 DatabaseNodeData newData = new DatabaseNodeData(DatabaseNodeData.NodeType.BACKUP,
-                        newName, data.getConnectionConfig(), data.getDatabaseName());
+                        newName, data.getConnectionConfig(), data.getDatabaseName(), null, data.getPath());
                 module.getDbNodeDataMap().remove(backupItem);
                 module.getDbNodeDataMap().put(backupItem, newData);
             } catch (Exception e) {
@@ -1359,9 +2243,185 @@ public abstract class AbstractDbHandler implements ConnectHandler {
         confirm.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
                 BackupService.deleteBackupFile(data.getConnectionConfig().getName(),
-                        data.getDatabaseName(), data.getName());
+                        data.getDatabaseName(), data.getName(), data.getPath());
                 module.getDbNodeDataMap().remove(backupItem);
                 backupItem.getParent().getChildren().remove(backupItem);
+            }
+        });
+    }
+
+    // ==================== 查询/备份目录节点 ====================
+
+    /** 新建查询目录：在父目录（QUERY_FOLDER 或 QUERY_DIR）下创建子目录 */
+    public void handleNewQueryDir(TreeItem<String> folderItem, DatabaseNodeData data) {
+        TextInputDialog dialog = new TextInputDialog("新目录");
+        dialog.setTitle("新建目录");
+        dialog.setHeaderText(null);
+        dialog.setContentText("目录名称：");
+        dialog.showAndWait().ifPresent(name -> {
+            if (name.trim().isEmpty()) return;
+            String dirName = name.trim();
+            String parentPath = data.getPath();
+            String dirPath = (parentPath == null || parentPath.isEmpty()) ? dirName : parentPath + "/" + dirName;
+
+            try {
+                Files.createDirectories(SqlEditorView.resolveQueryDir(
+                        data.getConnectionConfig().getName(), data.getDatabaseName(), dirPath));
+            } catch (IOException e) {
+                Alert err = new Alert(Alert.AlertType.ERROR);
+                err.setTitle("创建目录失败");
+                err.setHeaderText(null);
+                err.setContentText(e.getMessage());
+                err.showAndWait();
+                return;
+            }
+
+            TreeItem<String> dirItem = new TreeItem<>(dirName);
+            DatabaseNodeData dirData = new DatabaseNodeData(DatabaseNodeData.NodeType.QUERY_DIR, dirName,
+                    data.getConnectionConfig(), data.getDatabaseName(), null, dirPath);
+            dirItem.setGraphic(module.getDbNodeIcon(dirData));
+            module.getDbNodeDataMap().put(dirItem, dirData);
+            folderItem.getChildren().add(0, dirItem);
+            folderItem.setExpanded(true);
+        });
+    }
+
+    /** 新建备份目录 */
+    public void handleNewBackupDir(TreeItem<String> folderItem, DatabaseNodeData data) {
+        TextInputDialog dialog = new TextInputDialog("新目录");
+        dialog.setTitle("新建目录");
+        dialog.setHeaderText(null);
+        dialog.setContentText("目录名称：");
+        dialog.showAndWait().ifPresent(name -> {
+            if (name.trim().isEmpty()) return;
+            String dirName = name.trim();
+            String parentPath = data.getPath();
+            String dirPath = (parentPath == null || parentPath.isEmpty()) ? dirName : parentPath + "/" + dirName;
+
+            try {
+                Files.createDirectories(BackupService.resolveBackupDir(
+                        data.getConnectionConfig().getName(), data.getDatabaseName(), dirPath));
+            } catch (IOException e) {
+                Alert err = new Alert(Alert.AlertType.ERROR);
+                err.setTitle("创建目录失败");
+                err.setHeaderText(null);
+                err.setContentText(e.getMessage());
+                err.showAndWait();
+                return;
+            }
+
+            TreeItem<String> dirItem = new TreeItem<>(dirName);
+            DatabaseNodeData dirData = new DatabaseNodeData(DatabaseNodeData.NodeType.BACKUP_DIR, dirName,
+                    data.getConnectionConfig(), data.getDatabaseName(), null, dirPath);
+            dirItem.setGraphic(module.getDbNodeIcon(dirData));
+            module.getDbNodeDataMap().put(dirItem, dirData);
+            folderItem.getChildren().add(0, dirItem);
+            folderItem.setExpanded(true);
+        });
+    }
+
+    /** 重命名查询目录：移动磁盘目录并刷新子节点 */
+    public void handleRenameQueryDir(TreeItem<String> dirItem, DatabaseNodeData data) {
+        TextInputDialog dialog = new TextInputDialog(data.getName());
+        dialog.setTitle("重命名目录");
+        dialog.setHeaderText(null);
+        dialog.setContentText("新名称：");
+        dialog.showAndWait().ifPresent(name -> {
+            if (name.trim().isEmpty()) return;
+            String newName = name.trim();
+            String currentPath = data.getPath();
+            int lastSlash = currentPath.lastIndexOf('/');
+            String parentOf = lastSlash < 0 ? "" : currentPath.substring(0, lastSlash);
+            String newPath = parentOf.isEmpty() ? newName : parentOf + "/" + newName;
+
+            try {
+                java.nio.file.Path oldDir = SqlEditorView.resolveQueryDir(
+                        data.getConnectionConfig().getName(), data.getDatabaseName(), currentPath);
+                java.nio.file.Path newDir = SqlEditorView.resolveQueryDir(
+                        data.getConnectionConfig().getName(), data.getDatabaseName(), newPath);
+                Files.move(oldDir, newDir);
+            } catch (IOException e) {
+                Alert err = new Alert(Alert.AlertType.ERROR);
+                err.setTitle("重命名失败");
+                err.setHeaderText(null);
+                err.setContentText(e.getMessage());
+                err.showAndWait();
+                return;
+            }
+
+            dirItem.setValue(newName);
+            DatabaseNodeData newData = new DatabaseNodeData(DatabaseNodeData.NodeType.QUERY_DIR, newName,
+                    data.getConnectionConfig(), data.getDatabaseName(), null, newPath);
+            module.getDbNodeDataMap().remove(dirItem);
+            module.getDbNodeDataMap().put(dirItem, newData);
+            refreshDbNode(dirItem, newData);
+        });
+    }
+
+    /** 重命名备份目录 */
+    public void handleRenameBackupDir(TreeItem<String> dirItem, DatabaseNodeData data) {
+        TextInputDialog dialog = new TextInputDialog(data.getName());
+        dialog.setTitle("重命名目录");
+        dialog.setHeaderText(null);
+        dialog.setContentText("新名称：");
+        dialog.showAndWait().ifPresent(name -> {
+            if (name.trim().isEmpty()) return;
+            String newName = name.trim();
+            String currentPath = data.getPath();
+            int lastSlash = currentPath.lastIndexOf('/');
+            String parentOf = lastSlash < 0 ? "" : currentPath.substring(0, lastSlash);
+            String newPath = parentOf.isEmpty() ? newName : parentOf + "/" + newName;
+
+            try {
+                java.nio.file.Path oldDir = BackupService.resolveBackupDir(
+                        data.getConnectionConfig().getName(), data.getDatabaseName(), currentPath);
+                java.nio.file.Path newDir = BackupService.resolveBackupDir(
+                        data.getConnectionConfig().getName(), data.getDatabaseName(), newPath);
+                Files.move(oldDir, newDir);
+            } catch (IOException e) {
+                Alert err = new Alert(Alert.AlertType.ERROR);
+                err.setTitle("重命名失败");
+                err.setHeaderText(null);
+                err.setContentText(e.getMessage());
+                err.showAndWait();
+                return;
+            }
+
+            dirItem.setValue(newName);
+            DatabaseNodeData newData = new DatabaseNodeData(DatabaseNodeData.NodeType.BACKUP_DIR, newName,
+                    data.getConnectionConfig(), data.getDatabaseName(), null, newPath);
+            module.getDbNodeDataMap().remove(dirItem);
+            module.getDbNodeDataMap().put(dirItem, newData);
+            refreshDbNode(dirItem, newData);
+        });
+    }
+
+    /** 删除查询目录：递归删除磁盘目录与所有内容 */
+    public void handleDeleteQueryDir(TreeItem<String> dirItem, DatabaseNodeData data) {
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("删除目录");
+        confirm.setHeaderText("确定要删除目录 \"" + data.getName() + "\" 及其所有内容吗？");
+        confirm.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.OK) {
+                SqlEditorView.deleteQueryDir(data.getConnectionConfig().getName(),
+                        data.getDatabaseName(), data.getPath());
+                module.removeDbNodeDataRecursive(dirItem);
+                dirItem.getParent().getChildren().remove(dirItem);
+            }
+        });
+    }
+
+    /** 删除备份目录 */
+    public void handleDeleteBackupDir(TreeItem<String> dirItem, DatabaseNodeData data) {
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("删除目录");
+        confirm.setHeaderText("确定要删除目录 \"" + data.getName() + "\" 及其所有内容吗？");
+        confirm.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.OK) {
+                BackupService.deleteBackupDir(data.getConnectionConfig().getName(),
+                        data.getDatabaseName(), data.getPath());
+                module.removeDbNodeDataRecursive(dirItem);
+                dirItem.getParent().getChildren().remove(dirItem);
             }
         });
     }

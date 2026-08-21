@@ -20,6 +20,10 @@ public class ConfigManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final String ENCRYPTION_MARKER = "TOMATO_ENCRYPTED";
 
+    public static String getConfigFilePath() {
+        return CONFIG_FILE;
+    }
+
     public static List<ConnectionConfig> loadConnections() {
         Path filePath = Paths.get(CONFIG_FILE);
         if (!Files.exists(filePath)) {
@@ -51,10 +55,14 @@ public class ConfigManager {
                         }
                     }
                 }
-                saveConnections(configs);
+                try {
+                    saveConnections(configs);
+                } catch (SaveException ignored) {
+                }
                 return configs;
             }
         } catch (Exception e) {
+            System.err.println("[ConfigManager] 加载连接配置失败: " + e.getMessage());
             e.printStackTrace();
             return new ArrayList<>();
         }
@@ -68,44 +76,67 @@ public class ConfigManager {
             }
             return new ArrayList<>(List.of(configs));
         } catch (Exception e) {
+            System.err.println("[ConfigManager] 解析连接配置 JSON 失败: " + e.getMessage());
             e.printStackTrace();
             return new ArrayList<>();
         }
     }
 
-    public static void saveConnections(List<ConnectionConfig> connections) {
+    /** 保存连接配置，失败时抛出 SaveException 以便调用者向用户提示错误。 */
+    public static void saveConnections(List<ConnectionConfig> connections) throws SaveException {
         try {
             Files.createDirectories(Paths.get(CONFIG_DIR));
         } catch (IOException e) {
-            e.printStackTrace();
-            return;
+            throw new SaveException("创建配置目录失败: " + e.getMessage(), e);
         }
 
-        String json = GSON.toJson(connections);
-        String encryptedContent = ENCRYPTION_MARKER + SecurityUtils.encrypt(json);
+        String json;
+        String encryptedContent;
+        try {
+            json = GSON.toJson(connections);
+            encryptedContent = ENCRYPTION_MARKER + SecurityUtils.encrypt(json);
+        } catch (Exception e) {
+            throw new SaveException("序列化或加密连接配置失败: " + e.getMessage(), e);
+        }
 
         Path tempFile = Paths.get(CONFIG_FILE + ".tmp");
+        Path targetFile = Paths.get(CONFIG_FILE);
         try {
             Files.writeString(tempFile, encryptedContent, StandardCharsets.UTF_8);
         } catch (IOException e) {
-            e.printStackTrace();
-            return;
+            try { Files.deleteIfExists(tempFile); } catch (IOException ignored) {}
+            throw new SaveException("写入临时配置文件失败: " + e.getMessage(), e);
         }
 
         try {
-            Files.move(tempFile, Paths.get(CONFIG_FILE), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            Files.move(tempFile, targetFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
         } catch (IOException e) {
-            e.printStackTrace();
             try {
-                Files.copy(tempFile, Paths.get(CONFIG_FILE), StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(tempFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
                 Files.deleteIfExists(tempFile);
             } catch (IOException ex) {
-                ex.printStackTrace();
+                try { Files.deleteIfExists(tempFile); } catch (IOException ignored) {}
+                throw new SaveException("替换配置文件失败 (move+copy均失败): " + ex.getMessage(), ex);
             }
+        }
+
+        long writtenSize;
+        try {
+            writtenSize = Files.size(targetFile);
+            if (writtenSize == 0) {
+                throw new SaveException("保存后配置文件大小为 0，可能写入不完整", null);
+            }
+        } catch (IOException e) {
+            throw new SaveException("校验保存结果失败: " + e.getMessage(), e);
         }
     }
 
     public static String generateId() {
         return UUID.randomUUID().toString();
+    }
+
+    /** 保存失败时抛出的运行时异常，便于上层通过 try-catch 给用户提示 */
+    public static class SaveException extends RuntimeException {
+        public SaveException(String msg, Throwable cause) { super(msg, cause); }
     }
 }

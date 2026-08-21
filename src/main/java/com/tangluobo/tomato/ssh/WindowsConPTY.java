@@ -19,13 +19,15 @@ import java.lang.invoke.MethodHandle;
  * 需要 Windows 10 1809+（2018年10月）。
  * ConPTY 管道通信使用 UTF-8 编码。
  */
-public class WindowsConPTY implements AutoCloseable {
+public class WindowsConPTY implements PseudoTerminal {
 
     private static final Linker LINKER = Linker.nativeLinker();
     private static final SymbolLookup KERNEL32;
 
     // Windows 常量
     private static final int EXTENDED_STARTUPINFO_PRESENT = 0x00080000;
+    private static final int CREATE_NO_WINDOW = 0x08000000;
+    private static final int STARTF_USESTDHANDLES = 0x00000100;
     private static final long PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE = 0x00020016L;
     private static final int STILL_ACTIVE = 259;
     private static final int WAIT_TIMEOUT = 0x102;
@@ -41,7 +43,23 @@ public class WindowsConPTY implements AutoCloseable {
 
     // 字段偏移量
     private static final long OFFSET_SI_CB = 0;
+    private static final long OFFSET_SI_LPRESERVED = 8;
+    private static final long OFFSET_SI_DESKTOP = 16;
+    private static final long OFFSET_SI_TITLE = 24;
+    private static final long OFFSET_SI_X = 32;
+    private static final long OFFSET_SI_Y = 36;
+    private static final long OFFSET_SI_XSIZE = 40;
+    private static final long OFFSET_SI_YSIZE = 44;
+    private static final long OFFSET_SI_XCOUNTCHARS = 48;
+    private static final long OFFSET_SI_YCOUNTCHARS = 52;
+    private static final long OFFSET_SI_FILLATTRIBUTE = 56;
     private static final long OFFSET_SI_DWFLAGS = 60;
+    private static final long OFFSET_SI_SHOWWINDOW = 64;
+    private static final long OFFSET_SI_CBRESERVED2 = 68;
+    private static final long OFFSET_SI_LPRESERVED2 = 72;
+    private static final long OFFSET_SI_HSTDINPUT = 80;
+    private static final long OFFSET_SI_HSTDOUTPUT = 88;
+    private static final long OFFSET_SI_HSTDERROR = 96;
 
     private static final long OFFSET_SIEX_ATTR_LIST = STARTUPINFO_SIZE; // 104
 
@@ -61,6 +79,7 @@ public class WindowsConPTY implements AutoCloseable {
     private static final MethodHandle CloseHandle;
     private static final MethodHandle ReadFile;
     private static final MethodHandle WriteFile;
+    private static final MethodHandle PeekNamedPipe;
     private static final MethodHandle GetExitCodeProcess;
     private static final MethodHandle WaitForSingleObject;
     private static final MethodHandle TerminateProcess;
@@ -85,9 +104,9 @@ public class WindowsConPTY implements AutoCloseable {
                 CreatePipe = lookup("CreatePipe",
                     FunctionDescriptor.of(ValueLayout.JAVA_INT, HANDLE_LAYOUT, HANDLE_LAYOUT, HANDLE_LAYOUT, ValueLayout.JAVA_INT));
                 CreatePseudoConsole = lookup("CreatePseudoConsole",
-                    FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, HANDLE_LAYOUT, HANDLE_LAYOUT, ValueLayout.JAVA_INT, HANDLE_LAYOUT));
+                    FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG));
                 ResizePseudoConsole = lookup("ResizePseudoConsole",
-                    FunctionDescriptor.of(ValueLayout.JAVA_INT, HANDLE_LAYOUT, ValueLayout.JAVA_INT));
+                    FunctionDescriptor.of(ValueLayout.JAVA_INT, HANDLE_LAYOUT, ValueLayout.JAVA_LONG));
                 ClosePseudoConsole = lookup("ClosePseudoConsole",
                     FunctionDescriptor.ofVoid(HANDLE_LAYOUT));
                 InitializeProcThreadAttributeList = lookup("InitializeProcThreadAttributeList",
@@ -105,6 +124,8 @@ public class WindowsConPTY implements AutoCloseable {
                     FunctionDescriptor.of(ValueLayout.JAVA_INT, HANDLE_LAYOUT, HANDLE_LAYOUT, ValueLayout.JAVA_INT, HANDLE_LAYOUT, HANDLE_LAYOUT));
                 WriteFile = lookup("WriteFile",
                     FunctionDescriptor.of(ValueLayout.JAVA_INT, HANDLE_LAYOUT, HANDLE_LAYOUT, ValueLayout.JAVA_INT, HANDLE_LAYOUT, HANDLE_LAYOUT));
+                PeekNamedPipe = lookup("PeekNamedPipe",
+                    FunctionDescriptor.of(ValueLayout.JAVA_INT, HANDLE_LAYOUT, HANDLE_LAYOUT, ValueLayout.JAVA_INT, HANDLE_LAYOUT, HANDLE_LAYOUT, HANDLE_LAYOUT));
                 GetExitCodeProcess = lookup("GetExitCodeProcess",
                     FunctionDescriptor.of(ValueLayout.JAVA_INT, HANDLE_LAYOUT, HANDLE_LAYOUT));
                 WaitForSingleObject = lookup("WaitForSingleObject",
@@ -126,6 +147,7 @@ public class WindowsConPTY implements AutoCloseable {
             CloseHandle = null;
             ReadFile = null;
             WriteFile = null;
+            PeekNamedPipe = null;
             GetExitCodeProcess = null;
             WaitForSingleObject = null;
             TerminateProcess = null;
@@ -152,14 +174,25 @@ public class WindowsConPTY implements AutoCloseable {
     // 预分配的辅助内存（避免每次调用都分配）
     private MemorySegment bytesRead;
     private MemorySegment bytesWritten;
+    private MemorySegment ioReadBuffer;   // 预分配的读取缓冲区（native内存）
+    private MemorySegment ioWriteBuffer;  // 预分配的写入缓冲区（native内存）
+    private MemorySegment exitCodeBuf;    // 预分配的退出码缓冲区
+    private MemorySegment peekTotalAvail; // PeekNamedPipe: 可用字节数
+    private MemorySegment peekBytesLeft;  // PeekNamedPipe: 剩余字节数
+    private static final int IO_BUFFER_SIZE = 64 * 1024; // 64KB
 
     /**
      * 检测 ConPTY 是否可用（仅 Windows 10 1809+）
      */
-    public static boolean isAvailable() {
+    public static boolean isPlatformSupported() {
         String os = System.getProperty("os.name", "").toLowerCase();
         if (!os.contains("win")) return false;
         return AVAILABLE;
+    }
+
+    @Override
+    public boolean isAvailable() {
+        return isPlatformSupported();
     }
 
     /**
@@ -169,6 +202,7 @@ public class WindowsConPTY implements AutoCloseable {
      * @param rows 初始行数
      * @throws IOException 启动失败
      */
+    @Override
     public void start(String command, int cols, int rows) throws IOException {
         arena = Arena.ofShared();
 
@@ -181,6 +215,8 @@ public class WindowsConPTY implements AutoCloseable {
             MemorySegment hOurRead = arena.allocate(HANDLE_LAYOUT);     // 我们读取端
             MemorySegment hPipePTYOut = arena.allocate(HANDLE_LAYOUT);  // ConPTY写入端
 
+            // SECURITY_ATTRIBUTES: 用 NULL（默认属性），CreatePseudoConsole 不要求管道句柄可继承
+            // 它内部会复制句柄
             // CreatePipe(hReadPipe, hWritePipe, lpPipeAttributes=NULL, nSize=0)
             int result = (int) CreatePipe.invoke(hPipePTYIn, hOurWrite, MemorySegment.NULL, 0);
             if (result == 0) throw new IOException("CreatePipe(input) failed");
@@ -194,14 +230,12 @@ public class WindowsConPTY implements AutoCloseable {
             long pipePtyOut = hPipePTYOut.get(HANDLE_LAYOUT, 0).address();
 
             // 2. 创建伪控制台
-            // COORD 按4字节整数传递（Windows x64 ABI: ≤8字节结构体按值传为整数）
-            // COORD { SHORT X, SHORT Y } → X | (Y << 16)
-            int coord = (cols & 0xFFFF) | ((rows & 0xFFFF) << 16);
-            MemorySegment phPC = arena.allocate(HANDLE_LAYOUT);
-            int hr = (int) CreatePseudoConsole.invoke(coord,
-                MemorySegment.ofAddress(pipePtyIn), MemorySegment.ofAddress(pipePtyOut), 0, phPC);
+            // COORD { SHORT X, SHORT Y } → X | (Y << 16)，用 JAVA_LONG 传递避免 ABI 不匹配
+            long coord = (cols & 0xFFFF) | ((long)(rows & 0xFFFF) << 16);
+            MemorySegment phPC = arena.allocate(ValueLayout.JAVA_LONG);
+            int hr = (int) CreatePseudoConsole.invoke(coord, pipePtyIn, pipePtyOut, 0, phPC.address());
             if (hr != 0) throw new IOException("CreatePseudoConsole failed: hr=0x" + Integer.toHexString(hr));
-            hPC = phPC.get(HANDLE_LAYOUT, 0).address();
+            hPC = phPC.get(ValueLayout.JAVA_LONG, 0);
 
             // ConPTY已接管pipePtyIn和pipePtyOut，关闭它们
             CloseHandle(MemorySegment.ofAddress(pipePtyIn));
@@ -243,6 +277,9 @@ public class WindowsConPTY implements AutoCloseable {
             }
 
             // 7. 创建进程
+            // CREATE_NO_WINDOW: 确保进程不继承父进程控制台窗口，强制使用 ConPTY
+            // EXTENDED_STARTUPINFO_PRESENT: 使用 STARTUPINFOEX 和属性列表
+            int creationFlags = EXTENDED_STARTUPINFO_PRESENT | CREATE_NO_WINDOW;
             MemorySegment processInfo = arena.allocate(24); // PROCESS_INFORMATION: 24字节
             result = (int) CreateProcessW.invoke(
                 MemorySegment.NULL,       // lpApplicationName
@@ -250,7 +287,7 @@ public class WindowsConPTY implements AutoCloseable {
                 MemorySegment.NULL,       // lpProcessAttributes
                 MemorySegment.NULL,       // lpThreadAttributes
                 0,                        // bInheritHandles = FALSE
-                EXTENDED_STARTUPINFO_PRESENT, // dwCreationFlags
+                creationFlags,            // dwCreationFlags
                 MemorySegment.NULL,       // lpEnvironment（继承父进程环境）
                 MemorySegment.NULL,       // lpCurrentDirectory
                 startupInfo,              // lpStartupInfo
@@ -264,9 +301,14 @@ public class WindowsConPTY implements AutoCloseable {
             // 关闭主线程句柄（不需要）
             CloseHandle(MemorySegment.ofAddress(threadHandle));
 
-            // 预分配读写辅助内存
+            // 预分配读写辅助内存（native段，FFM API不允许heap段传给native函数）
             bytesRead = arena.allocate(ValueLayout.JAVA_INT);
             bytesWritten = arena.allocate(ValueLayout.JAVA_INT);
+            ioReadBuffer = arena.allocate(IO_BUFFER_SIZE);
+            ioWriteBuffer = arena.allocate(IO_BUFFER_SIZE);
+            exitCodeBuf = arena.allocate(ValueLayout.JAVA_INT);
+            peekTotalAvail = arena.allocate(ValueLayout.JAVA_INT);
+            peekBytesLeft = arena.allocate(ValueLayout.JAVA_INT);
 
         } catch (IOException e) {
             cleanup();
@@ -278,27 +320,54 @@ public class WindowsConPTY implements AutoCloseable {
     }
 
     /**
+     * 检查管道中是否有数据可读（非阻塞）
+     * @return 可读字节数，-1表示管道已关闭
+     */
+    public int peekAvailable() {
+        if (closed) return -1;
+        try {
+            int result = (int) PeekNamedPipe.invoke(
+                MemorySegment.ofAddress(outputReadHandle),
+                MemorySegment.NULL,    // lpBuffer (NULL = 不读取数据)
+                0,                     // nBufferSize
+                MemorySegment.NULL,    // lpBytesRead
+                peekTotalAvail,        // lpTotalBytesAvail
+                peekBytesLeft);        // lpBytesLeftThisMessage
+            if (result == 0) {
+                // PeekNamedPipe失败，管道可能已关闭
+                return -1;
+            }
+            return peekTotalAvail.get(ValueLayout.JAVA_INT, 0);
+        } catch (Throwable t) {
+            return -1;
+        }
+    }
+
+    /**
      * 从进程输出读取数据（阻塞调用）
      * @param buffer 读取缓冲区
      * @return 读取的字节数，-1表示EOF（进程已退出）
      * @throws IOException 读取失败
      */
+    @Override
     public int read(byte[] buffer) throws IOException {
-        if (closed) return -1;
+        if (closed || outputReadHandle == 0) return -1;
         try {
-            MemorySegment bufSeg = MemorySegment.ofArray(buffer);
+            int toRead = Math.min(buffer.length, IO_BUFFER_SIZE);
             int result = (int) ReadFile.invoke(
                 MemorySegment.ofAddress(outputReadHandle),
-                bufSeg,
-                buffer.length,
+                ioReadBuffer,
+                toRead,
                 bytesRead,
                 MemorySegment.NULL);
             if (result == 0) {
-                // ReadFile失败，通常是管道已关闭
+                // ReadFile失败，通常是管道已关闭（进程退出）
                 return -1;
             }
             int count = bytesRead.get(ValueLayout.JAVA_INT, 0);
             if (count == 0) return -1; // EOF
+            // 从native段拷贝到Java数组
+            MemorySegment.copy(ioReadBuffer, ValueLayout.JAVA_BYTE, 0L, buffer, 0, count);
             return count;
         } catch (Throwable t) {
             throw new IOException("ConPTY read failed: " + t.getMessage(), t);
@@ -310,16 +379,34 @@ public class WindowsConPTY implements AutoCloseable {
      * @param data 字节数据（UTF-8编码）
      * @throws IOException 写入失败
      */
+    @Override
     public void write(byte[] data) throws IOException {
-        if (closed) return;
+        if (closed || inputWriteHandle == 0) return;
         try {
-            MemorySegment bufSeg = MemorySegment.ofArray(data);
-            int result = (int) WriteFile.invoke(
-                MemorySegment.ofAddress(inputWriteHandle),
-                bufSeg,
-                data.length,
-                bytesWritten,
-                MemorySegment.NULL);
+            int result;
+            if (data.length <= IO_BUFFER_SIZE) {
+                // 使用预分配的native缓冲区
+                MemorySegment.copy(data, 0, ioWriteBuffer, ValueLayout.JAVA_BYTE, 0L, data.length);
+                result = (int) WriteFile.invoke(
+                    MemorySegment.ofAddress(inputWriteHandle),
+                    ioWriteBuffer,
+                    data.length,
+                    bytesWritten,
+                    MemorySegment.NULL);
+            } else {
+                // 数据太大（如大段粘贴），使用临时arena
+                try (Arena localArena = Arena.ofConfined()) {
+                    MemorySegment bufSeg = localArena.allocate(data.length);
+                    MemorySegment.copy(data, 0, bufSeg, ValueLayout.JAVA_BYTE, 0L, data.length);
+                    result = (int) WriteFile.invoke(
+                        MemorySegment.ofAddress(inputWriteHandle),
+                        bufSeg,
+                        data.length,
+                        bytesWritten,
+                        MemorySegment.NULL);
+                }
+            }
+            int written = bytesWritten.get(ValueLayout.JAVA_INT, 0);
             if (result == 0) {
                 throw new IOException("WriteFile failed");
             }
@@ -335,10 +422,11 @@ public class WindowsConPTY implements AutoCloseable {
      * @param cols 新列数
      * @param rows 新行数
      */
+    @Override
     public void resize(int cols, int rows) {
         if (closed || hPC == 0) return;
         try {
-            int coord = (cols & 0xFFFF) | ((rows & 0xFFFF) << 16);
+            long coord = (cols & 0xFFFF) | ((long)(rows & 0xFFFF) << 16);
             ResizePseudoConsole.invoke(MemorySegment.ofAddress(hPC), coord);
         } catch (Throwable t) {
             // 非关键操作，忽略错误
@@ -348,14 +436,14 @@ public class WindowsConPTY implements AutoCloseable {
     /**
      * 检查进程是否仍在运行
      */
+    @Override
     public boolean isAlive() {
         if (closed || processHandle == 0) return false;
         try {
-            MemorySegment exitCode = arena.allocate(ValueLayout.JAVA_INT);
             int result = (int) GetExitCodeProcess.invoke(
-                MemorySegment.ofAddress(processHandle), exitCode);
+                MemorySegment.ofAddress(processHandle), exitCodeBuf);
             if (result == 0) return false;
-            return exitCode.get(ValueLayout.JAVA_INT, 0) == STILL_ACTIVE;
+            return exitCodeBuf.get(ValueLayout.JAVA_INT, 0) == STILL_ACTIVE;
         } catch (Throwable t) {
             return false;
         }
@@ -364,6 +452,7 @@ public class WindowsConPTY implements AutoCloseable {
     /**
      * 获取进程ID
      */
+    @Override
     public int getPid() {
         return processPid;
     }

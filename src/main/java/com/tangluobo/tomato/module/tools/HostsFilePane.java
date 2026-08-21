@@ -1,5 +1,6 @@
 package com.tangluobo.tomato.module.tools;
 
+import com.tangluobo.tomato.utils.DialogPositionUtil;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.PauseTransition;
@@ -7,6 +8,7 @@ import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Cursor;
 import javafx.scene.control.*;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.layout.*;
@@ -101,6 +103,10 @@ public class HostsFilePane extends VBox {
     // 状态标签
     private Label statusLabel;
 
+    // 分隔条拖拽状态
+    private double dividerStartX;
+    private double dividerStartWidth;
+
     // 当前选中分组的条目编辑列表
     private List<HBox> entryRows = new ArrayList<>();
 
@@ -117,6 +123,8 @@ public class HostsFilePane extends VBox {
             initDefaultGroups();
         }
         refreshGroupList();
+        // 默认显示系统 Hosts 文件内容
+        showSystemHosts();
     }
 
     // ==================== UI 初始化 ====================
@@ -130,7 +138,7 @@ public class HostsFilePane extends VBox {
         // 自定义标题栏
         HBox titleBar = new HBox(10);
         titleBar.setAlignment(Pos.CENTER_LEFT);
-        titleBar.setPadding(new Insets(14, 20, 14, 20));
+        titleBar.setPadding(new Insets(14, 10, 14, 10));
         titleBar.setStyle("-fx-background-color: #f7f8fa; -fx-border-color: #e8e8e8; -fx-border-width: 0 0 1 0;");
 
         SVGPath titleIcon = new SVGPath();
@@ -150,25 +158,44 @@ public class HostsFilePane extends VBox {
 
         titleBar.getChildren().addAll(titleIcon, titleText, titleSpacer, subtitleLabel);
 
-        // 主体内容 - 分割面板
-        SplitPane splitPane = new SplitPane();
-        splitPane.setPadding(new Insets(10, 20, 10, 20));
-        splitPane.setDividerPositions(0.25);
+        // 主体内容 - 使用 Region 分隔条，与连接树/内容页分隔样式一致
+        HBox contentBox = new HBox();
+        contentBox.setStyle("-fx-padding: 0; -fx-background-insets: 0; -fx-border-color: transparent; -fx-border-width: 0;");
 
         // 左侧分组列表
         VBox leftPanel = createLeftPanel();
+        leftPanel.setPrefWidth(240);
+        leftPanel.setMinWidth(150);
+
+        // 分隔条：1px 宽，#E5E5E5，可拖拽
+        Region divider = new Region();
+        divider.setStyle("-fx-background-color: #E5E5E5;");
+        divider.setPrefWidth(1.0);
+        divider.setMaxWidth(1.0);
+        divider.setMinWidth(1.0);
+        divider.setCursor(Cursor.H_RESIZE);
+        setupDivider(divider, leftPanel);
+
         // 右侧编辑区
         VBox rightPanel = createRightPanel();
 
-        splitPane.getItems().addAll(leftPanel, rightPanel);
+        contentBox.getChildren().addAll(leftPanel, divider, rightPanel);
+        HBox.setHgrow(rightPanel, Priority.ALWAYS);
 
-        // 状态标签
+        // 状态标签（无内容时不占用布局空间，避免底部出现空白行）
         statusLabel = new Label("");
-        statusLabel.setPadding(new Insets(5, 20, 10, 20));
+        statusLabel.setPadding(new Insets(5, 10, 5, 10));
         statusLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #666;");
+        statusLabel.setManaged(false);
+        statusLabel.setVisible(false);
+        statusLabel.textProperty().addListener((obs, oldVal, newVal) -> {
+            boolean empty = newVal == null || newVal.isEmpty();
+            statusLabel.setManaged(!empty);
+            statusLabel.setVisible(!empty);
+        });
 
-        getChildren().addAll(titleBar, splitPane, statusLabel);
-        VBox.setVgrow(splitPane, Priority.ALWAYS);
+        getChildren().addAll(titleBar, contentBox, statusLabel);
+        VBox.setVgrow(contentBox, Priority.ALWAYS);
     }
 
     /**
@@ -176,11 +203,11 @@ public class HostsFilePane extends VBox {
      */
     private VBox createLeftPanel() {
         VBox panel = new VBox(10);
-        panel.setStyle("-fx-background-color: #ffffff; -fx-border-color: #e8e8e8; -fx-border-width: 0 1 0 0;");
+        panel.setStyle("-fx-background-color: #ffffff; -fx-padding: 0;");
 
         // 标题
         Label listTitle = new Label("环境列表");
-        listTitle.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #333; -fx-padding: 10 15 5 15;");
+        listTitle.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #333; -fx-padding: 10 10 5 10;");
 
         // 添加分组按钮
         Button addGroupBtn = new Button("+ 新建分组");
@@ -189,7 +216,7 @@ public class HostsFilePane extends VBox {
         addGroupBtn.setOnAction(e -> addNewGroup());
 
         HBox btnBox = new HBox();
-        btnBox.setPadding(new Insets(5, 15, 10, 15));
+        btnBox.setPadding(new Insets(5, 10, 10, 10));
         btnBox.getChildren().add(addGroupBtn);
 
         // 分组列表容器
@@ -199,7 +226,9 @@ public class HostsFilePane extends VBox {
 
         groupScrollPane = new ScrollPane(groupListContainer);
         groupScrollPane.setFitToWidth(true);
-        groupScrollPane.setStyle("-fx-background-color: transparent; -fx-border-color: transparent;");
+        groupScrollPane.setStyle("-fx-background-color: transparent; -fx-border-color: transparent; -fx-border-width: 0; -fx-padding: 0; -fx-background-insets: 0; -fx-border-insets: 0;");
+        groupScrollPane.getStyleClass().add("session-scroll-pane");
+        groupScrollPane.getStylesheets().add(getClass().getResource("/css/connect-tree.css").toExternalForm());
         groupScrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         groupScrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
 
@@ -214,36 +243,7 @@ public class HostsFilePane extends VBox {
      */
     private VBox createRightPanel() {
         VBox panel = new VBox(10);
-        panel.setStyle("-fx-background-color: #ffffff;");
-
-        // 当前分组标题
-        titleLabel = new Label("请选择或创建一个分组");
-        titleLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #333;");
-        titleLabel.setPadding(new Insets(5, 0, 5, 0));
-
-        // 条目编辑区域
-        entriesLabel = new Label("Hosts 条目");
-        entriesLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #555;");
-        entriesLabel.setPadding(new Insets(5, 0, 0, 0));
-
-        entriesContainer = new VBox(5);
-        entriesContainer.setPadding(new Insets(5));
-        entriesContainer.setStyle("-fx-background-color: #f8f9fa; -fx-border-color: #e0e0e0; -fx-border-radius: 4; -fx-background-radius: 4;");
-
-        entriesScrollPane = new ScrollPane(entriesContainer);
-        entriesScrollPane.setFitToWidth(true);
-        entriesScrollPane.setStyle("-fx-background-color: transparent; -fx-border-color: transparent;");
-        VBox.setVgrow(entriesScrollPane, Priority.ALWAYS);
-
-        // 添加条目按钮
-        Button addEntryBtn = new Button("+ 添加条目");
-        addEntryBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-size: 12px; -fx-padding: 5 12; -fx-background-radius: 4; -fx-cursor: hand;");
-        addEntryBtn.setMaxWidth(Double.MAX_VALUE);
-        addEntryBtn.setOnAction(e -> addNewEntry());
-
-        addEntryBox = new HBox();
-        addEntryBox.setPadding(new Insets(5, 0, 0, 0));
-        addEntryBox.getChildren().add(addEntryBtn);
+        panel.setStyle("-fx-background-color: #ffffff; -fx-padding: 0; -fx-background-insets: 0;");
 
         // 带行号的编辑器
         editorArea = new NumberedTextArea();
@@ -266,30 +266,31 @@ public class HostsFilePane extends VBox {
         });
         VBox.setVgrow(editorArea, Priority.ALWAYS);
 
-        // 按钮区
-        buttonBar = new HBox(10);
-        buttonBar.setAlignment(Pos.CENTER_RIGHT);
-        buttonBar.setPadding(new Insets(5, 0, 0, 0));
-
-        Button saveBtn = new Button("保存到系统");
-        saveBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-size: 13px; -fx-padding: 6 16; -fx-background-radius: 4; -fx-cursor: hand;");
-        saveBtn.setOnAction(e -> saveToHostsFile());
-
-        Button refreshBtn = new Button("刷新预览");
-        refreshBtn.setStyle("-fx-background-color: #FF9800; -fx-text-fill: white; -fx-font-size: 13px; -fx-padding: 6 16; -fx-background-radius: 4; -fx-cursor: hand;");
-        refreshBtn.setOnAction(e -> refreshEditorPreview());
-
-        buttonBar.getChildren().addAll(refreshBtn, saveBtn);
-
-        panel.getChildren().addAll(
-                entriesLabel,
-                entriesScrollPane,
-                addEntryBox,
-                editorArea,
-                buttonBar
-        );
+        panel.getChildren().addAll(editorArea);
 
         return panel;
+    }
+
+    /**
+     * 设置分隔条的拖拽行为，与连接树/内容页分隔条逻辑一致。
+     */
+    private void setupDivider(Region divider, VBox leftPanel) {
+        divider.setOnMouseEntered(e -> divider.setCursor(Cursor.H_RESIZE));
+        divider.setOnMouseExited(e -> divider.setCursor(Cursor.DEFAULT));
+
+        divider.setOnMousePressed(e -> {
+            dividerStartX = e.getScreenX();
+            dividerStartWidth = leftPanel.getWidth();
+        });
+
+        divider.setOnMouseDragged(e -> {
+            double deltaX = e.getScreenX() - dividerStartX;
+            double newWidth = dividerStartWidth + deltaX;
+            if (newWidth >= 150 && newWidth <= 500) {
+                leftPanel.setPrefWidth(newWidth);
+                leftPanel.setMinWidth(newWidth);
+            }
+        });
     }
 
     // ==================== 默认数据 ====================
@@ -332,10 +333,13 @@ public class HostsFilePane extends VBox {
      */
     private VBox createSystemHostsItem() {
         VBox itemBox = new VBox(0);
+        itemBox.setMaxWidth(Double.MAX_VALUE);
+        itemBox.setFillWidth(true);
 
         HBox row = new HBox(10);
         row.setAlignment(Pos.CENTER_LEFT);
-        row.setPadding(new Insets(10, 12, 10, 12));
+        row.setPadding(new Insets(10, 10, 10, 10));
+        row.setMaxWidth(Double.MAX_VALUE);
         row.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
 
         // 图标
@@ -365,10 +369,13 @@ public class HostsFilePane extends VBox {
      */
     private VBox createGroupItemBox(HostsGroup group) {
         VBox itemBox = new VBox(0);
+        itemBox.setMaxWidth(Double.MAX_VALUE);
+        itemBox.setFillWidth(true);
 
         HBox row = new HBox(12);
         row.setAlignment(Pos.CENTER_LEFT);
-        row.setPadding(new Insets(12, 12, 12, 12));
+        row.setPadding(new Insets(8, 10, 8, 10));
+        row.setMaxWidth(Double.MAX_VALUE);
         row.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
 
         // 选中样式
@@ -484,15 +491,13 @@ public class HostsFilePane extends VBox {
         dialog.setHeaderText("修改分组名称");
         dialog.setContentText("分组名称:");
 
+        DialogPositionUtil.centerOnOwner(dialog, this);
         dialog.showAndWait().ifPresent(name -> {
             String trimmedName = name.trim();
             if (!trimmedName.isEmpty()) {
                 group.setName(trimmedName);
                 saveGroups();
                 refreshGroupList();
-                if (selectedGroup == group) {
-                    titleLabel.setText(trimmedName + " 配置");
-                }
                 showSuccess("分组名已更新");
             }
         });
@@ -529,7 +534,6 @@ public class HostsFilePane extends VBox {
     private void updateRightPanel() {
         if (selectedGroup == null) {
             viewingSystemHosts = false;
-            titleLabel.setText("请选择或创建一个分组");
             setEntriesVisible(false);
             editorArea.clear();
             editorArea.setEditable(false);
@@ -538,7 +542,6 @@ public class HostsFilePane extends VBox {
         }
 
         viewingSystemHosts = false;
-        titleLabel.setText(selectedGroup.getName() + " 配置");
         setEntriesVisible(false);
 
         // 显示当前分组的条目内容（可编辑）
@@ -711,6 +714,7 @@ public class HostsFilePane extends VBox {
             return null;
         });
 
+        DialogPositionUtil.centerOnOwner(dialog, this);
         return dialog.showAndWait().map(password -> {
             try {
                 // 写入临时文件
@@ -749,7 +753,6 @@ public class HostsFilePane extends VBox {
         saveCurrentEditorToGroup();
         selectedGroup = null;
         viewingSystemHosts = true;
-        titleLabel.setText("系统 Hosts 文件");
 
         // 隐藏条目编辑区域
         setEntriesVisible(false);
@@ -762,18 +765,10 @@ public class HostsFilePane extends VBox {
     }
 
     /**
-     * 切换条目编辑区域的可见性
+     * 切换条目编辑区域的可见性（条目UI已移除，空实现保持兼容）
      */
     private void setEntriesVisible(boolean visible) {
-        entriesLabel.setVisible(visible);
-        entriesLabel.setManaged(visible);
-        entriesScrollPane.setVisible(visible);
-        entriesScrollPane.setManaged(visible);
-        addEntryBox.setVisible(visible);
-        addEntryBox.setManaged(visible);
-
-        buttonBar.setVisible(visible);
-        buttonBar.setManaged(visible);
+        // 条目编辑区域已移除，无需操作
     }
 
     /**
@@ -1107,6 +1102,7 @@ public class HostsFilePane extends VBox {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
+        DialogPositionUtil.centerOnOwner(alert, this);
         return alert.showAndWait().filter(response -> response == ButtonType.OK).isPresent();
     }
 

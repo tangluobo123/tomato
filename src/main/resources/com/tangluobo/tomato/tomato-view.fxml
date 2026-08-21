@@ -5,12 +5,14 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.shape.SVGPath?>
+<?import javafx.scene.Group?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.image.ImageView?>
 
-<HBox fx:id="rootPane" spacing="0.0" style="-fx-border-color: #D9D9D7; -fx-border-width: 1px;" xmlns:fx="http://javafx.com/fxml"
+<HBox fx:id="rootPane" spacing="0.0" style="-fx-border-color: #D9D9D7; -fx-border-width: 1 1 1 1;" xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.tangluobo.tomato.TomatoController">
   <children>
     <VBox fx:id="navPane" prefWidth="62.0" style="-fx-background-color: #ececea; -fx-border-color: #e5e5e5; -fx-border-width: 0 1 0 0;" spacing="10.0">
@@ -26,11 +28,19 @@
                      fill="WHITE" stroke="WHITE" strokeWidth="1.5"/>
           </graphic>
         </Button>
-        <Button onAction="#onModuleClick" 
+        <Button onAction="#onModuleClick"
                 style="-fx-background-color: transparent; -fx-pref-width: 45px; -fx-pref-height: 45px; -fx-background-radius: 8px;"
                 userData="tools">
           <graphic>
-            <SVGPath content="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.37-.3-.59-.22l-2.49 1c-.52-.39-1.08-.7-1.66-.94l-.38-2.65c-.03-.24-.24-.42-.48-.42h-4c-.24 0-.45.18-.48.42l-.38 2.65c-.58.24-1.14.55-1.66.94l-2.49-1c-.22-.08-.47 0-.59.22l-2 3.46c-.12.22-.07.49.12.64l2.11 1.65c-.04.32-.07.64-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.37.3.59.22l2.49-1c.52.39 1.08.7 1.66.94l.38 2.65c.03.24.24.42.48.42h4c.24 0 .45-.18.48-.42l.38-2.65c.58-.24 1.14-.55 1.66-.94l2.49 1c.22.08.47 0 .59-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zm-7.43 2.52c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z" 
+            <SVGPath content="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.37-.3-.59-.22l-2.49 1c-.52-.39-1.08-.7-1.66-.94l-.38-2.65c-.03-.24-.24-.42-.48-.42h-4c-.24 0-.45.18-.48.42l-.38 2.65c-.58.24-1.14.55-1.66.94l-2.49-1c-.22-.08-.47 0-.59.22l-2 3.46c-.12.22-.07.49.12.64l2.11 1.65c-.04.32-.07.64-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.37.3.59.22l2.49-1c.52.39 1.08.7 1.66.94l.38 2.65c.03.24.24.42.48.42h4c.24 0 .45-.18.48-.42l.38-2.65c.58-.24 1.14-.55 1.66-.94l2.49 1c.22.08.47 0 .59-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zm-7.43 2.52c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"
+                     fill="WHITE" stroke="WHITE" strokeWidth="1.5"/>
+          </graphic>
+        </Button>
+        <Button onAction="#onModuleClick"
+                style="-fx-background-color: transparent; -fx-pref-width: 40px; -fx-pref-height: 40px; -fx-background-radius: 8px;"
+                userData="server">
+          <graphic>
+            <SVGPath content="M20 13H4c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-4c0-1.1-.9-2-2-2zM7 19c-.83 0-1.5-.67-1.5-1.5S6.17 16 7 16s1.5.67 1.5 1.5S7.83 19 7 19zm13-11H4c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-4c0-1.1-.9-2-2-2zM7 13c-.83 0-1.5-.67-1.5-1.5S6.17 10 7 10s1.5.67 1.5 1.5S7.83 13 7 13zM20 1H4c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V3c0-1.1-.9-2-2-2zM7 7c-.83 0-1.5-.67-1.5-1.5S6.17 4 7 4s1.5.67 1.5 1.5S7.83 7 7 7z"
                      fill="WHITE" stroke="WHITE" strokeWidth="1.5"/>
           </graphic>
         </Button>
@@ -47,36 +57,44 @@
     
     <VBox fx:id="sidebarPane" prefWidth="240.0" style="-fx-background-color: #ffffff;" HBox.hgrow="NEVER"/>
     
-    <Region fx:id="divider2" style="-fx-background-color: linear-gradient(to right, transparent 3.5px, #D9D9D7 3.5px, #D9D9D7 4.5px, transparent 4.5px);" prefWidth="1.0"/>
+    <Region fx:id="divider2" style="-fx-background-color: #E5E5E5;" prefWidth="1.0" minWidth="1.0" maxWidth="1.0"/>
     
-    <VBox fx:id="contentPane" style="-fx-background-color: #f7f7f7;" HBox.hgrow="ALWAYS">
+    <VBox fx:id="contentPane" style="-fx-background-color: #ffffff; -fx-background-insets: 0; -fx-padding: 0; -fx-border-insets: 0;" spacing="0" HBox.hgrow="ALWAYS">
       <children>
         <HBox fx:id="titleBar" style="-fx-background-color: #ffffff; -fx-border-color: #D9D9D7; -fx-border-width: 0 0 1 0;" prefHeight="52" minHeight="52" maxHeight="52" spacing="10">
           <padding>
-            <Insets bottom="10.0" left="15.0" right="15.0" top="10.0"/>
+            <Insets bottom="10.0" left="15.0" right="0.0" top="0.0"/>
           </padding>
           <children>
-            <ImageView fx:id="logoView" fitWidth="28" fitHeight="28" preserveRatio="true"/>
-            <Label fx:id="chatTitle" text="选择一个模块"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Button fx:id="minimizeBtn" style="-fx-background-color: transparent; -fx-pref-width: 24px; -fx-pref-height: 24px;"
-                    onAction="#onMinimize">
-              <graphic>
-                <SVGPath content="M6 14h12v-2H6v2z" fill="#cccccc"/>
-              </graphic>
-            </Button>
-            <Button fx:id="maximizeBtn" style="-fx-background-color: transparent; -fx-pref-width: 24px; -fx-pref-height: 24px;"
-                    onAction="#onMaximize">
-              <graphic>
-                <SVGPath content="M3 3h18v18H3V3zm2 2v14h14V5H5z" fill="#e5e5e5"/>
-              </graphic>
-            </Button>
-            <Button fx:id="closeBtn" style="-fx-background-color: transparent; -fx-pref-width: 24px; -fx-pref-height: 24px;"
-                    onAction="#onClose">
-              <graphic>
-                <SVGPath content="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z" fill="#ff5f56"/>
-              </graphic>
-            </Button>
+            <HBox fx:id="windowButtons" alignment="TOP_RIGHT" spacing="2" style="-fx-padding: 0 0 0 0;">
+              <children>
+                <Button fx:id="settingsBtn" style="-fx-background-color: transparent; -fx-background-radius: 0; -fx-pref-width: 30px; -fx-pref-height: 26px; -fx-padding: 0 0px 0 0;"
+                        onAction="#onSettings">
+                  <graphic>
+                    <ImageView fx:id="settingsIcon" fitWidth="18" fitHeight="18" preserveRatio="true"/>
+                  </graphic>
+                </Button>
+                <Button fx:id="minimizeBtn" style="-fx-background-color: transparent; -fx-background-radius: 0; -fx-pref-width: 30px; -fx-pref-height: 26px; -fx-padding: 0 0px 0 0;"
+                        onAction="#onMinimize">
+                  <graphic>
+                    <SVGPath content="M6 13.5h12v-1H6v1z" fill="#131313"/>
+                  </graphic>
+                </Button>
+                <Button fx:id="maximizeBtn" style="-fx-background-color: transparent; -fx-background-radius: 0; -fx-pref-width: 30px; -fx-pref-height: 26px; -fx-padding: 0 0px 0 0;"
+                        onAction="#onMaximize">
+                  <graphic>
+                    <SVGPath content="M5 6h14v12H5V6zm1 1v10h12V7H6z" fill="#131313"/>
+                  </graphic>
+                </Button>
+                <Button fx:id="closeBtn" style="-fx-background-color: transparent; -fx-pref-width: 30px; -fx-pref-height: 26px; -fx-padding: 0 0px 0 0;"
+                        onAction="#onClose">
+                  <graphic>
+                    <SVGPath content="M19 6.5L18.5 6 12 12.5 5.5 6 5 6.5 11.5 13 5 19.5 5.5 20 12 13.5 18.5 20 19 19.5 12.5 13 19 6.5z" fill="#131313"/>
+                  </graphic>
+                </Button>
+              </children>
+            </HBox>
           </children>
         </HBox>
         

@@ -3,11 +3,10 @@ package com.tangluobo.tomato.module.connect.handler;
 import com.tangluobo.tomato.module.connect.ConnectModule;
 import com.tangluobo.tomato.module.connect.ConnectType;
 import com.tangluobo.tomato.module.connect.ConnectionConfig;
+import com.tangluobo.tomato.module.connect.dialog.PasswordPromptDialog;
 import com.tangluobo.tomato.module.connect.dialog.SessionConfigDialog;
 import com.tangluobo.tomato.rdp.RdpPane;
-import javafx.geometry.Insets;
 import javafx.scene.control.*;
-import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 
 /**
@@ -40,31 +39,17 @@ public class RdpConnectHandler implements ConnectHandler {
     private void createRdpTab(ConnectModule module, ConnectionConfig config) {
         String password = config.getPassword();
         if (password == null || password.isEmpty()) {
-            Dialog<String> pwdDialog = new Dialog<>();
-            pwdDialog.setTitle("输入密码");
-            pwdDialog.setHeaderText(config.getName() + " (" + config.getUsername() + "@" + config.getHost() + ")");
-            pwdDialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-
-            GridPane grid = new GridPane();
-            grid.setHgap(10);
-            grid.setVgap(10);
-            grid.setPadding(new Insets(20, 10, 10, 10));
-            PasswordField pf = new PasswordField();
-            pf.setPrefWidth(250);
-            grid.add(new Label("密码："), 0, 0);
-            grid.add(pf, 1, 0);
-            pwdDialog.getDialogPane().setContent(grid);
-
-            pwdDialog.setResultConverter(dialogButton -> {
-                if (dialogButton == ButtonType.OK) {
-                    return pf.getText();
-                }
-                return null;
-            });
-
-            var result = pwdDialog.showAndWait();
-            if (result.isEmpty() || result.get().isEmpty()) return;
-            password = result.get();
+            PasswordPromptDialog.Result pwdResult = PasswordPromptDialog.show(
+                    "输入密码",
+                    config.getName() + " (" + config.getUsername() + "@" + config.getHost() + ")",
+                    "密码：", null, "保存密码");
+            if (pwdResult == null || pwdResult.getPassword() == null || pwdResult.getPassword().isEmpty()) return;
+            password = pwdResult.getPassword();
+            if (pwdResult.isSavePassword()) {
+                config.setPassword(password);
+                config.setSavePassword(true);
+                module.saveConnections();
+            }
         }
 
         RdpPane rdpPane = new RdpPane();

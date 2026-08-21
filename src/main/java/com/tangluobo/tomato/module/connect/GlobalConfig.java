@@ -22,6 +22,11 @@ public class GlobalConfig {
     private String tableFontName = "Sans Serif";
     private int tableFontSize = 10;
 
+    private boolean sidebarVisible = true;
+
+    private String sshTerminalFontName = "monospace";
+    private double sshTerminalFontSize = 13.0;
+
     public int getScrollbackLines() {
         return scrollbackLines;
     }
@@ -44,6 +49,30 @@ public class GlobalConfig {
 
     public void setTableFontSize(int tableFontSize) {
         this.tableFontSize = tableFontSize;
+    }
+
+    public boolean isSidebarVisible() {
+        return sidebarVisible;
+    }
+
+    public void setSidebarVisible(boolean sidebarVisible) {
+        this.sidebarVisible = sidebarVisible;
+    }
+
+    public String getSshTerminalFontName() {
+        return sshTerminalFontName;
+    }
+
+    public void setSshTerminalFontName(String sshTerminalFontName) {
+        this.sshTerminalFontName = sshTerminalFontName;
+    }
+
+    public double getSshTerminalFontSize() {
+        return sshTerminalFontSize;
+    }
+
+    public void setSshTerminalFontSize(double sshTerminalFontSize) {
+        this.sshTerminalFontSize = sshTerminalFontSize;
     }
 
     private static GlobalConfig instance;

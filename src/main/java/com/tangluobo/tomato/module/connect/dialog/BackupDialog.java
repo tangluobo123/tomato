@@ -3,6 +3,7 @@ package com.tangluobo.tomato.module.connect.dialog;
 import com.tangluobo.tomato.module.connect.service.BackupService;
 import com.tangluobo.tomato.module.connect.ConnectionConfig;
 import com.tangluobo.tomato.module.connect.service.DatabaseService;
+import com.tangluobo.tomato.utils.DialogPositionUtil;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.geometry.Insets;
@@ -23,6 +24,7 @@ public class BackupDialog {
 
     private final ConnectionConfig config;
     private final String databaseName;
+    private final String path;
 
     private TextArea commentArea;
     private CheckBox lockTablesCheck;
@@ -40,9 +42,10 @@ public class BackupDialog {
     private final List<BackupObject> selectedObjects = new ArrayList<>();
     private BackupTask currentTask;
 
-    public BackupDialog(Stage parent, ConnectionConfig config, String databaseName) {
+    public BackupDialog(Stage parent, ConnectionConfig config, String databaseName, String path) {
         this.config = config;
         this.databaseName = databaseName;
+        this.path = path == null ? "" : path;
         initUI(parent);
         loadObjects();
     }
@@ -71,6 +74,7 @@ public class BackupDialog {
 
         Scene scene = new Scene(root, 720, 580);
         dialogStage.setScene(scene);
+        DialogPositionUtil.centerOnOwner(dialogStage, parent);
     }
 
     private TabPane createTabPane() {
@@ -570,6 +574,7 @@ public class BackupDialog {
         alert.setTitle("保存模板");
         alert.setHeaderText(null);
         alert.setContentText("模板已保存");
+        DialogPositionUtil.centerOnOwner(alert, dialogStage);
         alert.showAndWait();
     }
 
@@ -578,6 +583,7 @@ public class BackupDialog {
         alert.setTitle("加载模板");
         alert.setHeaderText(null);
         alert.setContentText("暂无已保存的模板");
+        DialogPositionUtil.centerOnOwner(alert, dialogStage);
         alert.showAndWait();
     }
 
@@ -586,6 +592,7 @@ public class BackupDialog {
         alert.setTitle("清除模板");
         alert.setHeaderText(null);
         alert.setContentText("模板已清除");
+        DialogPositionUtil.centerOnOwner(alert, dialogStage);
         alert.showAndWait();
     }
 
@@ -596,7 +603,8 @@ public class BackupDialog {
             alert.setTitle("备份");
             alert.setHeaderText(null);
             alert.setContentText("请至少选择一个备份对象");
-            alert.showAndWait();
+            DialogPositionUtil.centerOnOwner(alert, dialogStage);
+        alert.showAndWait();
             return;
         }
 
@@ -610,7 +618,7 @@ public class BackupDialog {
         boolean singleTx = singleTransactionCheck.isSelected();
         String customFile = useCustomFilenameCheck.isSelected() ? customFilenameField.getText() : null;
 
-        currentTask = new BackupTask(config, databaseName, selected, comment, lockTables, singleTx, customFile);
+        currentTask = new BackupTask(config, databaseName, selected, comment, lockTables, singleTx, customFile, path);
 
         currentTask.messageProperty().addListener((obs, oldMsg, newMsg) -> {
             Platform.runLater(() -> logArea.appendText(newMsg + "\n"));
@@ -636,7 +644,8 @@ public class BackupDialog {
                 alert.setHeaderText(null);
                 String result = currentTask.getValue();
                 alert.setContentText("备份文件已保存:\n" + result);
-                alert.showAndWait();
+                DialogPositionUtil.centerOnOwner(alert, dialogStage);
+        alert.showAndWait();
                 dialogStage.close();
             });
         });
@@ -648,7 +657,8 @@ public class BackupDialog {
                 alert.setTitle("备份失败");
                 alert.setHeaderText(null);
                 alert.setContentText("错误: " + currentTask.getException().getMessage());
-                alert.showAndWait();
+                DialogPositionUtil.centerOnOwner(alert, dialogStage);
+        alert.showAndWait();
             });
         });
 
@@ -773,6 +783,7 @@ public class BackupDialog {
         private final boolean lockTables;
         private final boolean singleTransaction;
         private final String customFilename;
+        private final String path;
 
         private int recordCount = 0;
         private long startTime;
@@ -781,7 +792,7 @@ public class BackupDialog {
         private final javafx.beans.property.SimpleStringProperty runningTime = new javafx.beans.property.SimpleStringProperty();
 
         public BackupTask(ConnectionConfig config, String databaseName, List<BackupObject> objects,
-                          String comment, boolean lockTables, boolean singleTransaction, String customFilename) {
+                          String comment, boolean lockTables, boolean singleTransaction, String customFilename, String path) {
             this.config = config;
             this.databaseName = databaseName;
             this.objects = objects;
@@ -789,6 +800,7 @@ public class BackupDialog {
             this.lockTables = lockTables;
             this.singleTransaction = singleTransaction;
             this.customFilename = customFilename;
+            this.path = path == null ? "" : path;
         }
 
         public javafx.beans.property.SimpleLongProperty recordCountProperty() { return recordCountProp; }
@@ -805,14 +817,14 @@ public class BackupDialog {
             }
             filename = filename.replaceAll("[\\\\/:*?\"<>|]", "_") + ".nb3";
 
-            String path = BackupService.createBackup(config, databaseName, objects, comment,
-                    lockTables, singleTransaction, filename, this);
+            String result = BackupService.createBackup(config, databaseName, objects, comment,
+                    lockTables, singleTransaction, filename, path, this);
 
             long elapsed = System.currentTimeMillis() - startTime;
             Platform.runLater(() -> runningTime.set(String.format("%d.%d 秒", elapsed / 1000, (elapsed % 1000) / 100)));
-            updateMessage("备份完成: " + path);
+            updateMessage("备份完成: " + result);
 
-            return path;
+            return result;
         }
 
         public void incrementRecordCount(long count) {

@@ -7,7 +7,6 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollBar;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.input.Clipboard;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
@@ -16,87 +15,81 @@ import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 
-import java.io.*;
-import java.nio.charset.Charset;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 /**
- * 本地终端组件，使用VT100终端模拟器，连接本地Shell进程
- * Windows: 支持 cmd 和 powershell
- * Linux/macOS: 使用系统默认Shell (bash/zsh)
+ * 本地终端组件，使用 PseudoTerminal + TerminalEmulator + TerminalView。
+ *
+ * 架构与 SSHTerminalPane 一致：
+ * - PseudoTerminal 提供伪终端（Windows ConPTY / Linux-macOS forkpty），shell 在其中以真正的交互模式运行
+ * - TerminalEmulator 解析 ANSI 转义序列并维护字符缓冲区
+ * - TerminalView 渲染终端画面（Canvas）
+ *
+ * 这样 telnet/ssh/vim 等需要控制台的交互式程序能正常工作，
+ * 且 ANSI 颜色/光标控制能正确渲染。
  */
 public class LocalTerminalPane extends BorderPane {
 
     private final TerminalEmulator emulator;
     private final TerminalView terminalView;
-    private Process shellProcess;
+    private PseudoTerminal pty;
+    private volatile boolean running = false;
     private Thread readThread;
-    private final AtomicBoolean running = new AtomicBoolean(false);
+
+    // 滚动条
+    private final ScrollBar scrollBar;
+    private boolean updatingScrollbar = false;
 
     // 状态栏
-    private final Label stateLabel;
-    private final Label shellLabel;
     private final Circle statusDot;
-
-    // 终端容器
-    private final Pane terminalPane;
-    private final ScrollBar scrollBar;
+    private final Label stateLabel;
+    private final Label connLabel;
 
     // 右键菜单
     private final ContextMenu contextMenu;
 
-    // 编码标签
-    private final Label encodingLabel;
-
     // 渲染节流
     private long lastRenderTime = 0;
-    private static final long RENDER_INTERVAL = 33;
+    private static final long RENDER_INTERVAL = 33; // ~30fps
     private boolean renderPending = false;
-
-    // 防止scrollbar循环
-    private boolean updatingScrollbar = false;
-
-    // 交替缓冲区状态跟踪
-    private boolean lastAltBufferState = false;
-
-    // Shell类型
-    private String shellType;
-    private OutputStream processOutput;
-
-    // Windows ConPTY 伪控制台（支持Tab补全等控制台功能）
-    private WindowsConPTY conPTY;
-
-    // 本地进程输出编码（Windows中文系统为GBK，Linux/macOS为UTF-8）
-    private Charset processCharset;
 
     public LocalTerminalPane() {
         emulator = new TerminalEmulator();
         terminalView = new TerminalView(emulator);
+        com.tangluobo.tomato.module.connect.GlobalConfig gcfg = com.tangluobo.tomato.module.connect.GlobalConfig.getInstance();
+        terminalView.setTerminalFont(gcfg.getSshTerminalFontName(), gcfg.getSshTerminalFontSize());
+
+        // 调试：输出 emulator 接收的原始数据
+        // emulator.setDebugWriter(line -> System.err.print("[EMU-RECV] " + line));
 
         // 状态栏
         HBox statusBar = new HBox();
         statusBar.setStyle("-fx-background-color: #FFFFFB; -fx-padding: 2 10; -fx-alignment: center-left; -fx-border-color: #e0e0e0; -fx-border-width: 1 0 0 0;");
 
-        statusDot = new Circle(4, Color.RED);
+        statusDot = new Circle(4, Color.GRAY);
         HBox.setMargin(statusDot, new javafx.geometry.Insets(0, 4, 0, 0));
 
         stateLabel = new Label("未连接");
         stateLabel.setStyle("-fx-text-fill: #333333; -fx-font-size: 11px;");
         HBox.setMargin(stateLabel, new javafx.geometry.Insets(0, 8, 0, 0));
 
-        shellLabel = new Label("");
-        shellLabel.setStyle("-fx-text-fill: #333333; -fx-font-size: 11px;");
+        connLabel = new Label(getShellDisplayName());
+        connLabel.setStyle("-fx-text-fill: #333333; -fx-font-size: 11px;");
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        encodingLabel = new Label("");
+        Label encodingLabel = new Label("UTF-8");
         encodingLabel.setStyle("-fx-text-fill: #333333; -fx-font-size: 11px;");
 
-        statusBar.getChildren().addAll(statusDot, stateLabel, shellLabel, encodingLabel, spacer);
+        statusBar.getChildren().addAll(statusDot, stateLabel, connLabel, spacer, encodingLabel);
 
-        // 终端区域 + 右侧滚动条
+        // 终端区域 + 滚动条
         scrollBar = new ScrollBar();
         scrollBar.setOrientation(javafx.geometry.Orientation.VERTICAL);
         scrollBar.setStyle("-fx-background-color: #2d2d2d;");
@@ -115,7 +108,7 @@ public class LocalTerminalPane extends BorderPane {
             terminalView.setScrollOffset(Math.max(0, Math.min(offset, scrollbackSize)));
         });
 
-        terminalPane = new Pane() {
+        Pane terminalPane = new Pane() {
             @Override
             protected void layoutChildren() {
                 super.layoutChildren();
@@ -130,7 +123,7 @@ public class LocalTerminalPane extends BorderPane {
             }
         };
         terminalPane.getChildren().addAll(terminalView, scrollBar);
-        terminalPane.setStyle("-fx-background-color: #1e1e1e;");
+        terminalPane.setStyle("-fx-background-color: #1e1e1e; -fx-padding: 0; -fx-border-color: transparent; -fx-border-width: 0;");
         terminalPane.setMaxWidth(Double.MAX_VALUE);
         terminalPane.setMaxHeight(Double.MAX_VALUE);
         terminalPane.setPrefWidth(800);
@@ -159,442 +152,319 @@ public class LocalTerminalPane extends BorderPane {
             });
         });
 
-        // 终端大小变化时通知Shell进程
-        // Windows: ConPTY支持ResizePseudoConsole
-        // Linux/macOS: 向script进程发送SIGWINCH信号
-        terminalView.setResizeHandler((cols, rows, width, height) -> {
-            if (!running.get()) return;
-            String os = System.getProperty("os.name", "").toLowerCase();
-            if (os.contains("win")) {
-                // Windows: ConPTY 支持窗口大小调整
-                if (conPTY != null) {
-                    conPTY.resize(cols, rows);
-                }
-            } else {
-                // Linux/macOS: 向script进程及其子进程发送SIGWINCH信号
-                // 信号28 = SIGWINCH，通知进程终端窗口大小已改变
-                if (shellProcess != null) {
-                    try {
-                        long pid = shellProcess.pid();
-                        ProcessHandle.of(pid).ifPresent(ph -> {
-                            sendSignalToProcessTree(ph, 28);
-                        });
-                    } catch (Exception e) {
-                        // 非关键功能，忽略错误
-                    }
-                }
-            }
-        });
-
         setCenter(terminalPane);
         setBottom(statusBar);
-        setStyle("-fx-background-color: #1e1e1e;");
+        setStyle("-fx-background-color: #1e1e1e; -fx-padding: 0; -fx-border-color: transparent; -fx-border-width: 0;");
         setMaxWidth(Double.MAX_VALUE);
         setMaxHeight(Double.MAX_VALUE);
         setPrefWidth(800);
         setPrefHeight(600);
 
-        // 设置终端响应回调
+        // 终端响应回调（DA查询、DSR查询等回传给 PTY）
         emulator.setResponseHandler(data -> {
-            try {
-                if (conPTY != null) {
-                    conPTY.write(data);
-                } else if (processOutput != null) {
-                    processOutput.write(data);
-                    processOutput.flush();
+            if (pty != null && running) {
+                try {
+                    pty.write(data);
+                } catch (IOException e) {
+                    // 静默忽略
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
             }
         });
 
-        // 设置粘贴回调（Ctrl+Shift+V触发）
+        // 终端尺寸变化时通知 PTY
+        terminalView.setResizeHandler((cols, rows, width, height) -> {
+            if (pty != null && running) {
+                try {
+                    pty.resize(cols, rows);
+                } catch (Exception e) {
+                    // 静默忽略
+                }
+            }
+        });
+
+        // 粘贴
         terminalView.setPasteHandler(() -> doPaste());
 
-        // 设置键盘输入回调
+        // 键盘输入 → PTY
         terminalView.setKeyInputHandler(data -> {
-            if (!running.get()) return;
-            try {
-                if (conPTY != null) {
-                    // ConPTY: 直接写入UTF-8数据，ConPTY像真实终端一样处理换行符
-                    conPTY.write(data);
-                } else if (processOutput != null) {
-                    // 管道方式: 需要编码转换和\r→\r\n转换
-                    // TerminalView.handleKeyTyped中ch.getBytes()使用Java默认编码(UTF-8)
-                    // 需要将UTF-8字节解码为字符串，再用进程编码重新编码后写入
-                    String input = new String(data, java.nio.charset.StandardCharsets.UTF_8);
-
-                    // Windows下本地Shell（CMD/PowerShell）没有PTY，stdin是原始管道
-                    // 终端模拟器中Enter发送\r，但Windows Shell需要\r\n才能识别为换行
-                    // Linux/macOS通过PTY（script命令）会自动将\r转为\n，无需此转换
-                    String os = System.getProperty("os.name", "").toLowerCase();
-                    if (os.contains("win")) {
-                        if (input.equals("\r")) {
-                            input = "\r\n";
-                        }
-                    }
-
-                    // 使用进程编码发送文本，让进程能正确接收中文
-                    Charset sendCharset = processCharset != null ? processCharset : java.nio.charset.StandardCharsets.UTF_8;
-                    processOutput.write(input.getBytes(sendCharset));
-                    processOutput.flush();
+            if (pty != null && running) {
+                try {
+                    pty.write(data);
+                } catch (IOException e) {
+                    // 静默忽略
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
             }
         });
 
         // 右键菜单
         contextMenu = new ContextMenu();
         MenuItem copyItem = new MenuItem("复制");
-        copyItem.setOnAction(e -> terminalView.copySelection());
         MenuItem pasteItem = new MenuItem("粘贴");
-        pasteItem.setOnAction(e -> doPaste());
         MenuItem copyPasteItem = new MenuItem("复制并粘贴");
+        MenuItem clearItem = new MenuItem("清屏");
+
+        copyItem.setOnAction(e -> terminalView.copySelection());
+        pasteItem.setOnAction(e -> doPaste());
         copyPasteItem.setOnAction(e -> {
             terminalView.copySelection();
             doPaste();
         });
-        MenuItem selectAllItem = new MenuItem("全选");
-        selectAllItem.setOnAction(e -> terminalView.selectAll());
-        MenuItem clearItem = new MenuItem("清除选择");
-        clearItem.setOnAction(e -> terminalView.clearSelection());
-        contextMenu.getItems().addAll(copyItem, pasteItem, copyPasteItem, new SeparatorMenuItem(), selectAllItem, clearItem);
+        clearItem.setOnAction(e -> {
+            emulator.process("\033[2J\033[H".getBytes(StandardCharsets.UTF_8));
+            scheduleRender();
+        });
 
-        setOnContextMenuRequested(e -> {
+        contextMenu.getItems().addAll(copyItem, pasteItem, copyPasteItem, new SeparatorMenuItem(), clearItem);
+        contextMenu.setOnShowing(e -> {
             copyItem.setDisable(!terminalView.hasSelection());
             copyPasteItem.setDisable(!terminalView.hasSelection());
-            clearItem.setDisable(!terminalView.hasSelection());
-            contextMenu.show(this, e.getScreenX(), e.getScreenY());
+            pasteItem.setDisable(!Clipboard.getSystemClipboard().hasString());
+        });
+        terminalView.setOnContextMenuRequested(e -> {
+            contextMenu.show(terminalView, e.getScreenX(), e.getScreenY());
             e.consume();
         });
 
-        setOnMousePressed(e -> {
-            if (contextMenu.isShowing()) {
-                contextMenu.hide();
-            }
-        });
-
-        terminalView.addEventHandler(MouseEvent.MOUSE_PRESSED, e -> {
-            if (contextMenu.isShowing()) {
-                contextMenu.hide();
-            }
-        });
+        updateStatusBar("未连接");
     }
 
-    /**
-     * 请求终端输入焦点（切换标签时调用）
-     */
+    /** 请求终端输入焦点 */
     public void requestTerminalFocus() {
         Platform.runLater(() -> terminalView.requestFocus());
     }
 
-    /**
-     * 连接本地终端
-     * @param terminalType Windows: "cmd" 或 "powershell"; Linux/macOS: 忽略，使用系统默认Shell
-     */
-    public void connect(String terminalType) {
-        this.shellType = terminalType;
-        String os = System.getProperty("os.name", "").toLowerCase();
-
-        try {
-            // Windows: 优先使用 ConPTY 伪控制台（支持 Tab 补全、ANSI 转义序列等控制台功能）
-            if (os.contains("win") && WindowsConPTY.isAvailable()) {
-                conPTY = new WindowsConPTY();
-                String command = "powershell".equalsIgnoreCase(terminalType) ? "powershell.exe" : "cmd.exe";
-                this.shellType = "powershell".equalsIgnoreCase(terminalType) ? "PowerShell" : "CMD";
-                // ConPTY 管道通信使用 UTF-8 编码
-                processCharset = StandardCharsets.UTF_8;
-                conPTY.start(command, emulator.getCols(), emulator.getRows());
-                running.set(true);
-                updateStatusBar("已连接");
-                startReadThread();
-                Platform.runLater(() -> terminalView.requestFocus());
-                return;
-            }
-
-            ProcessBuilder pb;
-            if (os.contains("win")) {
-                // Windows: cmd.exe 和 powershell.exe 自带控制台，可直接使用
-                if ("powershell".equalsIgnoreCase(terminalType)) {
-                    pb = new ProcessBuilder("powershell.exe");
-                    this.shellType = "PowerShell";
-                } else {
-                    pb = new ProcessBuilder("cmd.exe");
-                    this.shellType = "CMD";
-                }
-                pb.redirectErrorStream(true);
-                // Java 18+ Charset.defaultCharset() 固定返回 UTF-8 (JEP 400)
-                // 需要使用 sun.jnu.encoding 获取 Windows 系统真实编码（中文系统为 GBK）
-                String jnuEncoding = System.getProperty("sun.jnu.encoding");
-                if (jnuEncoding != null) {
-                    processCharset = Charset.forName(jnuEncoding);
-                } else {
-                    processCharset = Charset.forName("GBK");
-                }
-            } else {
-                // Linux/macOS: 需要通过 script 命令分配 PTY，否则 bash/zsh 不会输出提示符
-                // Linux/macOS终端默认使用UTF-8，无需转码
-                processCharset = StandardCharsets.UTF_8;
-                String shell;
-                if (os.contains("mac")) {
-                    shell = new File("/bin/zsh").exists() ? "/bin/zsh" : "/bin/bash";
-                } else {
-                    shell = new File("/bin/bash").exists() ? "/bin/bash" : "/bin/sh";
-                }
-                this.shellType = shell;
-
-                // 使用 script 命令分配 PTY
-                // Linux (GNU): script -qec "shell -il" /dev/null
-                // macOS (BSD): script -q /dev/null shell -il
-                String scriptPath = null;
-                for (String candidate : new String[]{"/usr/bin/script", "/usr/local/bin/script", "/bin/script"}) {
-                    if (new File(candidate).exists()) {
-                        scriptPath = candidate;
-                        break;
-                    }
-                }
-
-                if (scriptPath != null) {
-                    if (os.contains("mac")) {
-                        // macOS BSD script: script -q /dev/null shell -il
-                        pb = new ProcessBuilder(scriptPath, "-q", "/dev/null", shell, "-il");
-                    } else {
-                        // Linux GNU script: script -qec "shell -il" /dev/null
-                        pb = new ProcessBuilder(scriptPath, "-qec", shell + " -il", "/dev/null");
-                    }
-                } else {
-                    // 没有 script 命令，回退到直接启动 shell（可能没有提示符）
-                    pb = new ProcessBuilder(shell, "-il");
-                }
-
-                // 设置TERM环境变量，使top/vim等程序能正确识别终端类型并使用交替屏幕缓冲区
-                // 与SSH终端保持一致，使用xterm-256color
-                pb.environment().put("TERM", "xterm-256color");
-
-                // Linux/macOS通过script分配PTY，stderr已通过PTY合并，无需redirectErrorStream
-            }
-
-            shellProcess = pb.start();
-            processOutput = shellProcess.getOutputStream();
-            running.set(true);
-
-            updateStatusBar("已连接");
-
-            // 启动读取线程
-            startReadThread();
-
-            Platform.runLater(() -> terminalView.requestFocus());
-
-        } catch (IOException e) {
-            Platform.runLater(() -> {
-                emulator.process(("\r\n[启动本地终端失败: " + e.getMessage() + "]\r\n").getBytes());
-                scheduleRender();
-                updateStatusBar("启动失败");
-            });
-            e.printStackTrace();
-        }
+    /** 更新终端字体并重绘 */
+    public void updateTerminalFont(String family, double size) {
+        terminalView.setTerminalFont(family, size);
     }
 
-    /**
-     * 设置回滚行数
-     */
+    /** 设置回滚行数 */
     public void setScrollbackLines(int lines) {
         emulator.setMaxScrollback(lines);
     }
 
-    private void updateStatusBar(String state) {
-        Platform.runLater(() -> {
-            boolean connected = state.equals("已连接");
-            statusDot.setFill(connected ? Color.valueOf("#4CAF50") : Color.RED);
-            stateLabel.setText(state);
-            if (shellType != null) {
-                shellLabel.setText(shellType);
-            }
-            if (processCharset != null) {
-                encodingLabel.setText(processCharset.name());
-            } else {
-                encodingLabel.setText("");
-            }
-        });
+    /** 根据平台获取终端显示名称 */
+    private String getShellDisplayName() {
+        String shell = PseudoTerminal.getDefaultShell();
+        if (shell == null || shell.isEmpty()) return "Terminal";
+        // "powershell.exe -NoProfile" → "PowerShell"
+        if (shell.toLowerCase().contains("powershell")) return "PowerShell";
+        if (shell.toLowerCase().contains("cmd.exe")) return "CMD";
+        // "/bin/bash" → "bash", "/usr/bin/zsh" → "zsh"
+        String name = shell.trim();
+        int spaceIdx = name.indexOf(' ');
+        if (spaceIdx > 0) name = name.substring(0, spaceIdx);
+        int slashIdx = name.lastIndexOf('/');
+        if (slashIdx >= 0) name = name.substring(slashIdx + 1);
+        return name.isEmpty() ? "Terminal" : name;
     }
 
-    private void doPaste() {
-        if (!running.get()) return;
-        if (conPTY == null && processOutput == null) return;
-        Clipboard clipboard = Clipboard.getSystemClipboard();
-        if (clipboard.hasString()) {
-            String text = clipboard.getString();
-            if (text != null && !text.isEmpty()) {
-                text = text.replace("\r\n", "\r").replace("\n", "\r");
-                // 括号粘贴模式：用\033[200~...\033[201~包裹内容，
-                // 让应用程序（如Claude CLI、bash）识别为粘贴而非逐字符输入
-                if (terminalView.getEmulator().isBracketedPasteMode()) {
-                    text = "\033[200~" + text + "\033[201~";
-                }
-                try {
-                    if (conPTY != null) {
-                        // ConPTY: 直接发送UTF-8，ConPTY像真实终端一样处理换行符
-                        conPTY.write(text.getBytes(StandardCharsets.UTF_8));
-                    } else {
-                        // 管道方式: Windows需要\r\n作为换行符
-                        String os = System.getProperty("os.name", "").toLowerCase();
-                        if (os.contains("win")) {
-                            text = text.replace("\r", "\r\n");
-                        }
-                        Charset sendCharset = processCharset != null ? processCharset : StandardCharsets.UTF_8;
-                        processOutput.write(text.getBytes(sendCharset));
-                        processOutput.flush();
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                terminalView.clearSelection();
-            }
+    /** 连接本地终端 */
+    public void connect(String terminalType) {
+        // 延迟到下一帧，确保 UI 已布局（Canvas 有正确宽高）
+        Platform.runLater(() -> doConnect(terminalType));
+    }
+
+    private void doConnect(String terminalType) {
+        // 创建跨平台 PTY 实例
+        pty = PseudoTerminal.create();
+        if (pty == null) {
+            String os = System.getProperty("os.name", "");
+            emulator.process(("当前平台不支持本地终端: " + os + "\r\n").getBytes(StandardCharsets.UTF_8));
+            scheduleRender();
+            updateStatusBar("不可用");
+            return;
+        }
+        try {
+            String shell = PseudoTerminal.getDefaultShell();
+            // emulator.process(("[调试] 正在启动终端: " + shell + "\r\n").getBytes(StandardCharsets.UTF_8));
+            // scheduleRender();
+            pty.start(shell, emulator.getCols(), emulator.getRows());
+            // emulator.process("[调试] 终端启动成功，开始读取\r\n".getBytes(StandardCharsets.UTF_8));
+            // scheduleRender();
+            running = true;
+            startReadThread();
+            updateStatusBar("已连接");
+            terminalView.requestFocus();
+        } catch (IOException e) {
+            emulator.process(("[调试] 终端启动失败: " + e.getMessage() + "\r\n").getBytes(StandardCharsets.UTF_8));
+            scheduleRender();
+            updateStatusBar("启动失败");
         }
     }
 
+    /** 断开连接 */
     public void disconnect() {
-        running.set(false);
-        terminalView.stopBlink();
-
-        if (conPTY != null) {
-            conPTY.close();
-            conPTY = null;
+        running = false;
+        if (pty != null) {
+            pty.close();
+            pty = null;
         }
-
-        if (shellProcess != null) {
-            // 先尝试正常终止，再强制杀掉
-            shellProcess.destroy();
-            try {
-                if (!shellProcess.waitFor(2, java.util.concurrent.TimeUnit.SECONDS)) {
-                    shellProcess.destroyForcibly();
-                }
-            } catch (InterruptedException ignored) {}
-            shellProcess = null;
-        }
-        processOutput = null;
-
         updateStatusBar("已断开");
     }
 
+    /** 读取线程：PTY 输出 → TerminalEmulator */
     private void startReadThread() {
         readThread = new Thread(() -> {
-            byte[] buffer = new byte[4096];
-            Charset readCharset = processCharset != null ? processCharset : StandardCharsets.UTF_8;
-            final boolean useConPTY = conPTY != null;
+            // 文件日志（确保能看到 read 线程的输出）
+            PrintWriter fileLog = null;
+            try {
+                Path logPath = Path.of(System.getProperty("java.io.tmpdir"), "tomato_terminal_debug.log");
+                fileLog = new PrintWriter(Files.newBufferedWriter(logPath,
+                    StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING));
+                fileLog.println("[READ-THREAD] 启动, time=" + System.currentTimeMillis());
+                fileLog.flush();
+            } catch (Exception e) {
+                // 忽略日志创建失败
+            }
 
-            while (running.get()) {
-                if (useConPTY) {
-                    if (!conPTY.isAlive()) break;
-                } else {
-                    if (shellProcess == null || !shellProcess.isAlive()) break;
+            byte[] buffer = new byte[4096];
+            try {
+                // 等待 shell 启动
+                Thread.sleep(200);
+
+                // 检查进程状态
+                if (pty != null) {
+                    boolean alive = pty.isAlive();
+                    int pid = pty.getPid();
+                    if (fileLog != null) { fileLog.println("[READ-THREAD] 进程 pid=" + pid + " alive=" + alive); fileLog.flush(); }
+                    // Platform.runLater(() -> {
+                    //     emulator.process(("[调试] 进程 pid=" + pid + " alive=" + alive + "\r\n").getBytes(StandardCharsets.UTF_8));
+                    //     scheduleRender();
+                    // });
                 }
 
-                try {
-                    int len;
-                    byte[] utf8Data;
-
-                    if (useConPTY) {
-                        // ConPTY 输出已是 UTF-8 VT 序列
-                        len = conPTY.read(buffer);
-                        if (len == -1) break;
-                        utf8Data = new byte[len];
-                        System.arraycopy(buffer, 0, utf8Data, 0, len);
-                    } else {
-                        InputStream is = shellProcess.getInputStream();
-                        len = is.read(buffer);
-                        if (len == -1) break;
-                        // 将进程输出的字节按进程编码解码，再转为UTF-8传给TerminalEmulator
-                        if (readCharset.equals(StandardCharsets.UTF_8)) {
-                            utf8Data = new byte[len];
-                            System.arraycopy(buffer, 0, utf8Data, 0, len);
+                int readCount = 0;
+                if (fileLog != null) { fileLog.println("[READ-THREAD] 进入读取循环"); fileLog.flush(); }
+                while (running && pty != null) {
+                    int len = pty.read(buffer);
+                    if (fileLog != null && len > 0) {
+                        if (readCount < 10) {
+                            StringBuilder hex = new StringBuilder();
+                            for (int i = 0; i < len && i < 64; i++) {
+                                hex.append(String.format("%02x ", buffer[i]));
+                            }
+                            fileLog.println("[READ-THREAD] read#" + (readCount+1) + " len=" + len + " hex=" + hex);
                         } else {
-                            String text = new String(buffer, 0, len, readCharset);
-                            utf8Data = text.getBytes(StandardCharsets.UTF_8);
+                            fileLog.println("[READ-THREAD] read#" + (readCount+1) + " len=" + len);
                         }
+                        fileLog.flush();
                     }
+                    if (len == -1) break;
+                    if (len <= 0) continue;
+                    readCount++;
 
-                    final byte[] finalData = utf8Data;
+                    final byte[] data = new byte[len];
+                    System.arraycopy(buffer, 0, data, 0, len);
                     Platform.runLater(() -> {
-                        emulator.process(finalData);
+                        emulator.process(data);
                         scheduleRender();
                     });
-
-                } catch (IOException e) {
-                    if (running.get()) {
-                        e.printStackTrace();
-                    }
-                    break;
                 }
+                if (fileLog != null) { fileLog.println("[READ-THREAD] 退出读取循环, readCount=" + readCount); fileLog.flush(); }
+                final int totalReads = readCount;
+                // Platform.runLater(() -> {
+                //     emulator.process(("[调试] 读取线程结束, 共读取" + totalReads + "次\r\n").getBytes(StandardCharsets.UTF_8));
+                //     scheduleRender();
+                // });
+            } catch (IOException e) {
+                if (fileLog != null) { fileLog.println("[READ-THREAD] IOException: " + e.getMessage()); fileLog.flush(); }
+                Platform.runLater(() -> {
+                    emulator.process(("[调试] 读取异常: " + e.getMessage() + "\r\n").getBytes(StandardCharsets.UTF_8));
+                    scheduleRender();
+                });
+                if (running) {
+                    Platform.runLater(() -> {
+                        emulator.process(("\r\n[进程已终止: " + e.getMessage() + "]\r\n").getBytes(StandardCharsets.UTF_8));
+                        scheduleRender();
+                    });
+                }
+            } catch (InterruptedException e) {
+                // 忽略
+            } finally {
+                if (fileLog != null) { fileLog.println("[READ-THREAD] 线程结束"); fileLog.flush(); fileLog.close(); }
             }
-            running.set(false);
-            Platform.runLater(() -> {
-                emulator.process(("\r\n[本地终端已退出]\r\n").getBytes(StandardCharsets.UTF_8));
-                scheduleRender();
-                updateStatusBar("已退出");
-            });
-        }, "LocalTerminal-Read-Thread");
+            running = false;
+            Platform.runLater(() -> updateStatusBar("已断开"));
+        }, "LocalTerminal-Read");
         readThread.setDaemon(true);
         readThread.start();
     }
 
+    // 调试计数器
+    private int renderDebugCount = 0;
+
+    /** 节流渲染，避免每收到一个字节就渲染一次，但保证最后一次总会渲染 */
     private void scheduleRender() {
-        long now = System.currentTimeMillis();
-        if (now - lastRenderTime >= RENDER_INTERVAL) {
-            lastRenderTime = now;
-            terminalView.render();
-            renderPending = false;
-            checkAltBufferState();
-        } else if (!renderPending) {
-            renderPending = true;
-            javafx.animation.PauseTransition delay = new javafx.animation.PauseTransition(
-                    javafx.util.Duration.millis(RENDER_INTERVAL - (now - lastRenderTime)));
-            delay.setOnFinished(e -> {
-                lastRenderTime = System.currentTimeMillis();
-                terminalView.render();
-                renderPending = false;
-                checkAltBufferState();
-            });
-            delay.play();
-        }
+        terminalView.render();
+        // 调试：前10次打印 Canvas 尺寸、emulator 状态和 buffer 第一行内容
+        // if (renderDebugCount < 10) {
+        //     renderDebugCount++;
+        //     double cw = terminalView.getWidth();
+        //     double ch = terminalView.getHeight();
+        //     int ecols = emulator.getCols();
+        //     int erows = emulator.getRows();
+        //     int cx = emulator.getCursorX();
+        //     int cy = emulator.getCursorY();
+        //     boolean alt = emulator.isUsingAltBuffer();
+        //     int sb = emulator.getScrollbackSize();
+        //     StringBuilder bufStr = new StringBuilder();
+        //     for (int y = 0; y < Math.min(3, erows); y++) {
+        //         StringBuilder line = new StringBuilder();
+        //         for (int x = 0; x < Math.min(60, ecols); x++) {
+        //             char c = emulator.getChar(x, y);
+        //             line.append(c == '\0' ? '·' : (c == ' ' ? ' ' : c));
+        //         }
+        //         bufStr.append("  [").append(y).append("] ").append(line).append("\n");
+        //     }
+        //     System.err.println("[RENDER#" + renderDebugCount + "] canvas=" + (int)cw + "x" + (int)ch +
+        //         " emulator=" + ecols + "x" + erows + " cursor=(" + cx + "," + cy + ")" +
+        //         " altBuf=" + alt + " scrollback=" + sb + "\n" + bufStr);
+        // }
     }
 
-    private void checkAltBufferState() {
-        boolean altBuffer = emulator.isUsingAltBuffer();
-        if (altBuffer != lastAltBufferState) {
-            lastAltBufferState = altBuffer;
-            if (altBuffer) {
-                stateLabel.setText("已连接 [ALT]");
-            } else {
-                stateLabel.setText("已连接");
+    /** 粘贴剪贴板内容到 ConPTY */
+    private void doPaste() {
+        Clipboard clipboard = Clipboard.getSystemClipboard();
+        if (clipboard.hasString()) {
+            String text = clipboard.getString();
+            if (text != null && !text.isEmpty()) {
+                // 括号粘贴模式：用 \033[200~ ... \033[201~ 包裹
+                if (emulator.isBracketedPasteMode()) {
+                    text = "\033[200~" + text + "\033[201~";
+                }
+                if (pty != null && running) {
+                    try {
+                        pty.write(text.getBytes(StandardCharsets.UTF_8));
+                    } catch (IOException e) {
+                        // 静默忽略
+                    }
+                }
             }
         }
+        Platform.runLater(() -> terminalView.clearSelection());
     }
 
-    /**
-     * 向进程及其子进程树发送信号（Linux/macOS）
-     * 使用kill命令发送信号，因为Java Process API不支持发送自定义信号
-     * @param ph 进程句柄
-     * @param signal 信号编号（28=SIGWINCH）
-     */
-    private void sendSignalToProcessTree(ProcessHandle ph, int signal) {
-        try {
-            long pid = ph.pid();
-            // 使用kill命令发送信号
-            new ProcessBuilder("kill", "-" + signal, String.valueOf(pid)).start();
-            // 递归发送给子进程
-            ph.children().forEach(child -> sendSignalToProcessTree(child, signal));
-        } catch (Exception e) {
-            // 非关键功能，忽略错误
-        }
-    }
-
-    public TerminalEmulator getEmulator() {
-        return emulator;
-    }
-
-    public TerminalView getTerminalView() {
-        return terminalView;
+    /** 更新状态栏 */
+    private void updateStatusBar(String state) {
+        Platform.runLater(() -> {
+            stateLabel.setText(state);
+            switch (state) {
+                case "已连接":
+                    statusDot.setFill(Color.GREEN);
+                    break;
+                case "运行中":
+                    statusDot.setFill(Color.ORANGE);
+                    break;
+                case "已断开":
+                case "启动失败":
+                case "不可用":
+                    statusDot.setFill(Color.RED);
+                    break;
+                default:
+                    statusDot.setFill(Color.GRAY);
+                    break;
+            }
+        });
     }
 }

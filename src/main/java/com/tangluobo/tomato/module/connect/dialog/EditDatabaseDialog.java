@@ -3,6 +3,7 @@ package com.tangluobo.tomato.module.connect.dialog;
 import com.tangluobo.tomato.module.connect.ConnectType;
 import com.tangluobo.tomato.module.connect.ConnectionConfig;
 import com.tangluobo.tomato.module.connect.service.DatabaseService;
+import com.tangluobo.tomato.utils.DialogPositionUtil;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -192,6 +193,7 @@ public class EditDatabaseDialog {
 
         Scene scene = new Scene(root);
         dialogStage.setScene(scene);
+        DialogPositionUtil.centerOnOwner(dialogStage, parent);
 
         updateSqlPreview();
     }

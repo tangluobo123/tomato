@@ -6,7 +6,7 @@
 
     <groupId>com.tangluobo</groupId>
     <artifactId>tomato</artifactId>
-    <version>0.0.1</version>
+    <version>0.0.4</version>
     <name>tomato</name>
 
     <properties>
@@ -16,6 +16,16 @@
         <native.maven.plugin.version>0.11.3</native.maven.plugin.version>
         <mainClass>com.tangluobo.tomato.Launcher</mainClass>
         <javafx.version>27-ea+24</javafx.version>
+        <!-- jpackage 相关属性 -->
+        <!-- agent.exec.skip=true 时跳过 test 阶段启动 UI 的 exec（java-agent），jpackage profile 中自动置为 true -->
+        <agent.exec.skip>false</agent.exec.skip>
+        <!-- jpackage 打包类型：exe（Win 安装向导，需 WiX 3.x）/ rpm（Linux）/ msi / app-image（绿色目录） -->
+        <jpackage.type>exe</jpackage.type>
+        <!-- WiX 3.x binaries 目录（jpackage 生成 exe/msi 时查找 candle.exe/light.exe），
+             指向项目内置的 packaging/wix314；也可用 WIX 环境变量或 PATH 覆盖 -->
+        <jpackage.wixdir>${project.basedir}/packaging/wix314</jpackage.wixdir>
+        <!-- 平台相关 jpackage 参数串（图标 + 安装向导选项），由 os-activated profile 自动注入 -->
+        <jpackage.platform.args></jpackage.platform.args>
     </properties>
 
     <description>
@@ -111,9 +121,9 @@
             <version>1.78.1</version>
         </dependency>
         <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>s3</artifactId>
-            <version>2.29.45</version>
+            <groupId>io.minio</groupId>
+            <artifactId>minio</artifactId>
+            <version>8.6.0</version>
         </dependency>
         <dependency>
             <groupId>com.aliyun.oss</groupId>
@@ -157,6 +167,11 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>4.3.1</version>
+        </dependency>
+        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-jdk14</artifactId>
             <version>2.0.9</version>
@@ -171,6 +186,159 @@
             <artifactId>batik-codec</artifactId>
             <version>1.18</version>
         </dependency>
+        <dependency>
+            <groupId>org.commonmark</groupId>
+            <artifactId>commonmark</artifactId>
+            <version>0.21.0</version>
+        </dependency>
+        <!-- Markdown 编辑器工具栏图标（参考 markdown-writer-fx） -->
+        <dependency>
+            <groupId>de.jensd</groupId>
+            <artifactId>fontawesomefx-fontawesome</artifactId>
+            <version>4.7.0-9.1.2</version>
+        </dependency>
+
+        <!-- ===== 参考 markdown-writer-fx 全量移植引入的依赖 ===== -->
+        <!-- flexmark 全套扩展（替换 commonmark 作为主解析器） -->
+        <dependency>
+            <groupId>com.vladsch.flexmark</groupId>
+            <artifactId>flexmark</artifactId>
+            <version>0.64.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.vladsch.flexmark</groupId>
+            <artifactId>flexmark-ext-abbreviation</artifactId>
+            <version>0.64.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.vladsch.flexmark</groupId>
+            <artifactId>flexmark-ext-anchorlink</artifactId>
+            <version>0.64.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.vladsch.flexmark</groupId>
+            <artifactId>flexmark-ext-aside</artifactId>
+            <version>0.64.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.vladsch.flexmark</groupId>
+            <artifactId>flexmark-ext-autolink</artifactId>
+            <version>0.64.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.vladsch.flexmark</groupId>
+            <artifactId>flexmark-ext-definition</artifactId>
+            <version>0.64.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.vladsch.flexmark</groupId>
+            <artifactId>flexmark-ext-footnotes</artifactId>
+            <version>0.64.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.vladsch.flexmark</groupId>
+            <artifactId>flexmark-ext-gfm-strikethrough</artifactId>
+            <version>0.64.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.vladsch.flexmark</groupId>
+            <artifactId>flexmark-ext-gfm-tasklist</artifactId>
+            <version>0.64.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.vladsch.flexmark</groupId>
+            <artifactId>flexmark-ext-tables</artifactId>
+            <version>0.64.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.vladsch.flexmark</groupId>
+            <artifactId>flexmark-ext-toc</artifactId>
+            <version>0.64.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.vladsch.flexmark</groupId>
+            <artifactId>flexmark-ext-wikilink</artifactId>
+            <version>0.64.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.vladsch.flexmark</groupId>
+            <artifactId>flexmark-ext-yaml-front-matter</artifactId>
+            <version>0.64.0</version>
+        </dependency>
+
+        <!-- ControlsFX（PopOver 等） -->
+        <dependency>
+            <groupId>org.controlsfx</groupId>
+            <artifactId>controlsfx</artifactId>
+            <version>11.2.1</version>
+        </dependency>
+
+        <!-- MigLayout -->
+        <dependency>
+            <groupId>com.miglayout</groupId>
+            <artifactId>miglayout-javafx</artifactId>
+            <version>11.3</version>
+        </dependency>
+
+        <!-- WellBehavedFX（richtextfx 已传递依赖，显式声明） -->
+        <dependency>
+            <groupId>org.fxmisc.wellbehaved</groupId>
+            <artifactId>wellbehavedfx</artifactId>
+            <version>0.3.3</version>
+        </dependency>
+
+        <!-- LanguageTool（拼写检查） -->
+        <dependency>
+            <groupId>org.languagetool</groupId>
+            <artifactId>language-all</artifactId>
+            <version>6.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>31.1-jre</version>
+        </dependency>
+
+        <!-- CSSFX（运行时 CSS 热重载） -->
+        <dependency>
+            <groupId>fr.brouillard.oss</groupId>
+            <artifactId>cssfx</artifactId>
+            <version>11.5.1</version>
+        </dependency>
+        <!-- yam-beans（flexmark/Options 依赖） -->
+        <dependency>
+            <groupId>com.esotericsoftware.yamlbeans</groupId>
+            <artifactId>yamlbeans</artifactId>
+            <version>1.15</version>
+        </dependency>
+
+        <!-- commons-lang3（StringUtils 等；commons-compress 1.26.x 运行时需 SystemProperties，故需 3.13.0+） -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.17.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>4.9.3</version> <!-- 或 4.10.0 等兼容版本 -->
+        </dependency>
+        <!-- 显式引入高版本 Jackson，强制覆盖传递依赖 -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.15.2</version> <!-- 与 MinIO 8.6.0 完美兼容 -->
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>2.15.2</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>2.15.2</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -182,6 +350,10 @@
                 <configuration>
                     <source>24</source>
                     <target>24</target>
+                    <compilerArgs>
+                        <arg>--add-reads</arg>
+                        <arg>tomato=ALL-UNNAMED</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
 <!--            <plugin>-->
@@ -256,6 +428,7 @@
                         </goals>
                         <phase>test</phase>
                         <configuration>
+                            <skip>${agent.exec.skip}</skip>
                             <executable>java</executable>
                             <workingDirectory>${project.build.directory}</workingDirectory>
                             <arguments>
@@ -293,15 +466,27 @@
                             <imageName>tomato</imageName>
                             <agent>
                                 <enabled>true</enabled>
+                                <!-- 自动将收集到的元数据复制到 src/main/resources/META-INF/native-image -->
+                                <!-- 正确的 metadataCopy 配置 -->
+                                <metadataCopy>
+                                    <!-- 指定元数据合并后输出的目标目录 -->
+                                    <outputDirectory>${project.basedir}/src/main/resources/META-INF/native-image</outputDirectory>
+                                    <!-- 可选：是否合并已存在的文件，默认为 false -->
+                                    <merge>true</merge>
+                                </metadataCopy>
                             </agent>
                             <buildArgs>
 
+<!--                                <buildArg>&#45;&#45;static &#45;&#45;libc=musl</buildArg>-->
                                 <buildArg>--enable-native-access=ALL-UNNAMED</buildArg> <!-- 未添加此参数会有警告，提示添加此参数，添加后就不会有警告 -->
                                 <buildArg>--no-fallback</buildArg>
-<!--                                <buildArg>-H:+AddAllCharsets</buildArg>--> <!-- 包含所有字符编码，会增大打包结果的大小，我本地测试会增大十几MB -->
-<!--                                <buildArg>-H:Optimize="2"</buildArg> &lt;!&ndash; 用于指定编译优化级别，2是默认  控制代码优化：b - 针对最快构建时间进行优化，s - 针对大小进行优化，0 - 无优化，1 - 基本优化，2 - 高级优化，3 - 所有优化以实现最佳性能。 &ndash;&gt;-->
+                                <!--包含所有字符编码，会增大打包结果的大小，我本地测试会增大十几MB-->
+                                <buildArg>-H:+AddAllCharsets</buildArg>
+                                <!--<buildArg>-H:Optimize="2"</buildArg> &lt;!&ndash; 用于指定编译优化级别，2是默认  控制代码优化：b - 针对最快构建时间进行优化，s - 针对大小进行优化，0 - 无优化，1 - 基本优化，2 - 高级优化，3 - 所有优化以实现最佳性能。 &ndash;&gt;-->
                                 <buildArg>-H:-CheckToolchain</buildArg>
-                                <buildArg>--initialize-at-run-time=io.netty.channel.kqueue.Native</buildArg>
+                                <buildArg>--initialize-at-run-time=io.netty.channel.kqueue.Native,io.netty.channel.kqueue.KQueueEventArray</buildArg>
+                                <!-- Woodstox (MinIO的XML解析器) 需在运行时初始化，否则native环境下XML解析会抛JsonParseException -->
+                                <buildArg>--initialize-at-run-time=com.ctc.wstx.stax.WstxInputFactory,com.ctc.wstx.stax.WstxOutputFactory,com.ctc.wstx.stax.WstxEventFactory,com.ctc.wstx.api.ReaderConfig,com.ctc.wstx.api.WriterConfig</buildArg>
 
                                 <!-- 下面两个参数用于在windows系统上用MSVC编译时，是的编译结果双击时不弹出cmd窗口 -->
                                 <!-- -H:NativeLinkerOption=/SUBSYSTEM:WINDOWS 告诉链接器生成「GUI 子系统」EXE，禁用 CMD 窗口-->
@@ -318,6 +503,112 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+        <!-- jpackage 打包 profile：mvn clean package -Pjpackage
+             思路：复用 maven-assembly-plugin 产出的 fat jar（classpath 运行方式，与开发期一致），
+                  用 JDK 自带的 jpackage 生成自带运行时的安装包或绿色目录。
+             平台：Windows 默认 exe 安装向导（需 WiX 3.x，项目内置 packaging/wix314）；
+                  Linux 自动覆盖为 rpm（需 rpmbuild，见 README 打包说明）；
+                  macOS 可用 -Djpackage.type=app-image 或 dmg。
+             说明：1. profile 激活时会自动跳过 test 阶段启动 UI 的 java-agent exec，打包过程无需人工干预。
+                  2. 产物在 target/jpackage/：Windows 为 tomato-0.0.1.exe，Linux 为 tomato-0.0.1-1.x86_64.rpm。
+                  3. 如需绿色目录：mvn clean package -Pjpackage -Djpackage.type=app-image。
+                  4. 平台相关参数（图标 + 安装向导选项）由 jpackage-os-win / jpackage-os-linux 两个
+                     按 OS 自动激活的 profile 注入到 jpackage.platform.args，无需手动指定。 -->
+        <profile>
+            <id>jpackage</id>
+            <properties>
+                <!-- 打包时跳过 test 阶段的 UI 启动（覆盖全局默认值 false） -->
+                <agent.exec.skip>true</agent.exec.skip>
+            </properties>
+            <build>
+                <plugins>
+                    <!-- 把 fat jar 复制到 target/jpackage-input，作为 jpackage 的 input 目录，
+                         避免 input 直接指向 target 把 classes、modules 等全部拷进应用目录 -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <version>3.3.1</version>
+                        <executions>
+                            <execution>
+                                <id>stage-jpackage-input</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/jpackage-input</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${project.build.directory}</directory>
+                                            <includes>
+                                                <include>${project.build.finalName}-jar-with-dependencies.jar</include>
+                                            </includes>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- 调用 JDK 自带的 jpackage 完成打包 -->
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.1.1</version>
+                        <executions>
+                            <execution>
+                                <id>jpackage</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>${java.home}/bin/jpackage</executable>
+                                    <!-- Windows 下把 WiX binaries 注入 PATH（jpackage 通过 PATH 查找 candle/light），
+                                         Linux 下 WIX 变量被 jpackage 忽略，PATH 追加无效路径也无害 -->
+                                    <environmentVariables>
+                                        <WIX>${jpackage.wixdir}</WIX>
+                                        <PATH>${jpackage.wixdir}${path.separator}${env.PATH}</PATH>
+                                    </environmentVariables>
+                                    <!-- 用 commandlineArgs 拼接通用参数 + ${jpackage.platform.args}（平台参数由 os-activated profile 注入），
+                                         避免 Linux 上传入 win 系列选项导致 jpackage 报错 -->
+                                    <commandlineArgs>--type ${jpackage.type} --name ${project.name} --dest "${project.build.directory}/jpackage" --input "${project.build.directory}/jpackage-input" --main-jar ${project.build.finalName}-jar-with-dependencies.jar --main-class ${mainClass} --app-version ${project.version} --vendor tangluobo --description "Tomato database and server connection tool" ${jpackage.platform.args}</commandlineArgs>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Windows 平台：自动注入 ico 图标 + win 安装向导选项（开始菜单、桌面快捷方式、目录选择、升级 UUID） -->
+        <profile>
+            <id>jpackage-os-win</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+            <properties>
+                <jpackage.platform.args>--icon "${project.basedir}/packaging/tomato.ico" --win-menu --win-menu-group Tomato --win-shortcut --win-dir-chooser --win-upgrade-uuid 9EDBE186-C9AB-44DC-BA36-5E69BFD9F4A1</jpackage.platform.args>
+            </properties>
+        </profile>
+
+        <!-- Linux 平台：自动把打包类型覆盖为 rpm，注入 png 图标 + linux 安装选项（菜单分组、桌面快捷方式）。
+             前置条件：已安装 rpm-build（rpmbuild 命令）和 JDK 25（JavaFX 27-ea 的 class 版本需要）。 -->
+        <profile>
+            <id>jpackage-os-linux</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                    <name>linux</name>
+                </os>
+            </activation>
+            <properties>
+                <jpackage.type>rpm</jpackage.type>
+                <jpackage.platform.args>--icon "${project.basedir}/src/main/resources/images/logo.png" --linux-menu-group Utility --linux-shortcut --linux-app-release 1</jpackage.platform.args>
+            </properties>
         </profile>
     </profiles>
 </project>

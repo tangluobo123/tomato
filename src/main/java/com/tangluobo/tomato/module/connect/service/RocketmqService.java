@@ -1,15 +1,29 @@
 package com.tangluobo.tomato.module.connect.service;
 
 import com.tangluobo.tomato.module.connect.ConnectionConfig;
+import com.tangluobo.tomato.module.connect.SshTunnelManager;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.client.QueryResult;
 import org.apache.rocketmq.client.consumer.DefaultMQPullConsumer;
 import org.apache.rocketmq.client.consumer.PullResult;
 import org.apache.rocketmq.client.consumer.PullStatus;
+import org.apache.rocketmq.client.impl.MQClientAPIImpl;
+import org.apache.rocketmq.client.impl.consumer.DefaultMQPullConsumerImpl;
+import org.apache.rocketmq.client.impl.factory.MQClientInstance;
+import org.apache.rocketmq.client.impl.producer.DefaultMQProducerImpl;
+import org.apache.rocketmq.client.producer.DefaultMQProducer;
+import org.apache.rocketmq.client.producer.SendResult;
+import org.apache.rocketmq.remoting.InvokeCallback;
+import org.apache.rocketmq.remoting.RemotingClient;
+import org.apache.rocketmq.remoting.RPCHook;
+import org.apache.rocketmq.remoting.netty.NettyRequestProcessor;
+import org.apache.rocketmq.remoting.pipeline.RequestPipeline;
+import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 import org.apache.rocketmq.remoting.protocol.admin.ConsumeStats;
 import org.apache.rocketmq.remoting.protocol.admin.OffsetWrapper;
 import org.apache.rocketmq.remoting.protocol.admin.TopicOffset;
 import org.apache.rocketmq.remoting.protocol.admin.TopicStatsTable;
+import org.apache.rocketmq.common.message.Message;
 import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.remoting.protocol.body.ClusterInfo;
 import org.apache.rocketmq.remoting.protocol.body.ConsumerConnection;
@@ -21,40 +35,58 @@ import org.apache.rocketmq.remoting.protocol.route.BrokerData;
 import org.apache.rocketmq.remoting.protocol.route.TopicRouteData;
 import org.apache.rocketmq.remoting.protocol.route.QueueData;
 import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
+import org.apache.rocketmq.tools.admin.DefaultMQAdminExtImpl;
 import org.apache.rocketmq.common.message.MessageQueue;
 
+import java.lang.reflect.Field;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 
 public class RocketmqService {
     // 缓存MQAdminExt实例，key为nameServer地址
     private static final Map<String, DefaultMQAdminExt> adminCache = new ConcurrentHashMap<>();
 
     /**
-     * 获取或创建MQAdminExt实例
+     * 获取或创建MQAdminExt实例。
+     * 启用SSH通道时，通过跳板机建立本地端口转发，Admin连接 localhost:转发端口。
+     * Admin 长生命周期持有隧道引用计数（closeAdmin 时释放）。
      */
     public static DefaultMQAdminExt getAdmin(ConnectionConfig config) throws MQClientException {
-        String nameServer = config.getHost() + ":" + config.getPort();
-        return adminCache.computeIfAbsent(nameServer, ns -> {
+        String cacheKey = adminCacheKey(config);
+        DefaultMQAdminExt cached = adminCache.get(cacheKey);
+        if (cached != null) return cached;
+        synchronized (RocketmqService.class) {
+            cached = adminCache.get(cacheKey);
+            if (cached != null) return cached;
+            String nameServer = resolveNameServer(config); // 启用隧道则建立/复用并获取引用计数
             DefaultMQAdminExt admin = new DefaultMQAdminExt();
-            admin.setNamesrvAddr(ns);
+            admin.setNamesrvAddr(nameServer);
             admin.setAdminExtGroup("tomato_admin_group");
             try {
                 admin.start();
             } catch (MQClientException e) {
-                throw new RuntimeException("启动MQAdminExt失败: " + e.getMessage(), e);
+                SshTunnelManager.release(config); // 启动失败则释放隧道引用
+                throw e;
             }
+            // 安装隧道 RemotingClient 装饰器：broker 地址经跳板隧道转发
+            installTunnelingRemotingClient(admin, config);
+            adminCache.put(cacheKey, admin);
             return admin;
-        });
+        }
     }
 
     /**
-     * 测试NameServer连接
+     * 测试NameServer连接（启用SSH通道时建立临时隧道，测试后释放）。
      */
     public static boolean testConnection(ConnectionConfig config) {
         DefaultMQAdminExt admin = new DefaultMQAdminExt();
+        boolean tunnelAcquired = false;
         try {
-            admin.setNamesrvAddr(config.getHost() + ":" + config.getPort());
+            String nameServer = resolveNameServer(config); // 启用隧道则建立并获取引用计数
+            tunnelAcquired = config.isUseSshTunnel() && config.getSshTunnelHostId() != null;
+            admin.setNamesrvAddr(nameServer);
             admin.setAdminExtGroup("tomato_admin_test_" + System.currentTimeMillis());
             admin.start();
             // 尝试获取集群信息来验证连接
@@ -64,17 +96,263 @@ public class RocketmqService {
             return false;
         } finally {
             try { admin.shutdown(); } catch (Exception ignored) {}
+            if (tunnelAcquired) SshTunnelManager.release(config);
         }
     }
 
     /**
-     * 关闭指定配置的Admin连接
+     * 关闭指定配置的Admin连接，并释放SSH跳板隧道引用。
      */
     public static void closeAdmin(ConnectionConfig config) {
-        String nameServer = config.getHost() + ":" + config.getPort();
-        DefaultMQAdminExt admin = adminCache.remove(nameServer);
+        String cacheKey = adminCacheKey(config);
+        DefaultMQAdminExt admin = adminCache.remove(cacheKey);
         if (admin != null) {
             try { admin.shutdown(); } catch (Exception ignored) {}
+        }
+        SshTunnelManager.release(config);
+        // 关闭所有 broker 跳板隧道（NameServer 隧道由 release 释放）
+        SshTunnelManager.closeBrokerTunnels(config);
+    }
+
+    /**
+     * Admin缓存键：隧道配置不同则按 configId 区分，避免不同跳板机共用同一Admin。
+     */
+    private static String adminCacheKey(ConnectionConfig config) {
+        String base = config.getHost() + ":" + config.getPort();
+        if (config.isUseSshTunnel() && config.getSshTunnelHostId() != null) {
+            return config.getId() + "_tunnel_" + base;
+        }
+        return base;
+    }
+
+    /**
+     * 解析实际连接的 NameServer 地址：启用隧道则建立/复用跳板隧道并获取引用计数，返回 localhost:转发端口。
+     * 调用方需在连接生命周期结束时调用 SshTunnelManager.release(config) 释放引用。
+     */
+    private static String resolveNameServer(ConnectionConfig config) {
+        if (config.isUseSshTunnel() && config.getSshTunnelHostId() != null) {
+            try {
+                int localPort = SshTunnelManager.resolve(config);
+                return "localhost:" + localPort;
+            } catch (Exception e) {
+                throw new RuntimeException("建立SSH跳板隧道失败: " + e.getMessage(), e);
+            }
+        }
+        return config.getHost() + ":" + config.getPort();
+    }
+
+    /**
+     * 获取 NameServer 地址（短生命周期消费者用）：复用 getAdmin 已建立的隧道（peek，不增减引用计数）。
+     * 隧道未建立时回退到原始地址。
+     */
+    private static String nameServer(ConnectionConfig config) {
+        int localPort = SshTunnelManager.peek(config);
+        if (localPort != -1) {
+            return "localhost:" + localPort;
+        }
+        return config.getHost() + ":" + config.getPort();
+    }
+
+    // ==================== RocketMQ broker 跳板隧道 RemotingClient 装饰器 ====================
+    //
+    // 问题：NameServer 走隧道后，NameServer 返回的 broker 地址仍是内网 IP（如 172.17.0.13:10911），
+    //       客户端直连 broker 失败。NettyRemotingClient.getAndCreateChannel 为 private 无法重写，
+    //       brokerAddrTable 会被 30s 路由刷新覆盖。
+    // 方案：用装饰器包装 MQClientAPIImpl.remotingClient（private final，反射注入），
+    //       在 invokeSync/invokeAsync/invokeOneway 等连接点将 broker 地址 remap 到 localhost:转发端口。
+    //       装饰器在连接时 remap，路由刷新不影响，Admin/PullConsumer 均生效。
+
+    /**
+     * 为 Admin 安装隧道 RemotingClient 装饰器
+     */
+    private static void installTunnelingRemotingClient(DefaultMQAdminExt admin, ConnectionConfig config) {
+        if (!config.isUseSshTunnel() || config.getSshTunnelHostId() == null) return;
+        try {
+            DefaultMQAdminExtImpl impl = admin.getDefaultMQAdminExtImpl();
+            if (impl == null) return;
+            MQClientInstance mqi = impl.getMqClientInstance();
+            installTunnelingRemotingClient(mqi, config);
+        } catch (Exception e) {
+            throw new RuntimeException("安装Admin隧道RemotingClient失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 为 PullConsumer 安装隧道 RemotingClient 装饰器
+     */
+    private static void installTunnelingRemotingClient(DefaultMQPullConsumer pullConsumer, ConnectionConfig config) {
+        if (!config.isUseSshTunnel() || config.getSshTunnelHostId() == null) return;
+        try {
+            DefaultMQPullConsumerImpl impl = pullConsumer.getDefaultMQPullConsumerImpl();
+            if (impl == null) return;
+            Field f = DefaultMQPullConsumerImpl.class.getDeclaredField("mQClientFactory");
+            f.setAccessible(true);
+            MQClientInstance mqi = (MQClientInstance) f.get(impl);
+            installTunnelingRemotingClient(mqi, config);
+        } catch (Exception e) {
+            throw new RuntimeException("安装PullConsumer隧道RemotingClient失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 为 Producer 安装隧道 RemotingClient 装饰器
+     */
+    private static void installTunnelingRemotingClient(DefaultMQProducer producer, ConnectionConfig config) {
+        if (!config.isUseSshTunnel() || config.getSshTunnelHostId() == null) return;
+        try {
+            DefaultMQProducerImpl impl = producer.getDefaultMQProducerImpl();
+            if (impl == null) return;
+            Field f = DefaultMQProducerImpl.class.getDeclaredField("mQClientFactory");
+            f.setAccessible(true);
+            MQClientInstance mqi = (MQClientInstance) f.get(impl);
+            installTunnelingRemotingClient(mqi, config);
+        } catch (Exception e) {
+            throw new RuntimeException("安装Producer隧道RemotingClient失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 将 MQClientInstance 的 remotingClient 替换为隧道装饰器（反射注入 final 字段）。
+     */
+    private static void installTunnelingRemotingClient(MQClientInstance mqi, ConnectionConfig config) throws Exception {
+        if (mqi == null) return;
+        MQClientAPIImpl api = mqi.getMQClientAPIImpl();
+        RemotingClient original = api.getRemotingClient();
+        if (original instanceof TunnelingRemotingClient) return; // 已包装
+        TunnelingRemotingClient decorator = new TunnelingRemotingClient(original, config);
+        Field f = MQClientAPIImpl.class.getDeclaredField("remotingClient");
+        f.setAccessible(true);
+        f.set(api, decorator);
+    }
+
+    /**
+     * RemotingClient 装饰器：对 broker 地址（非 localhost）remap 到 localhost:转发端口。
+     * NameServer 地址已是 localhost:转发端口（setNamesrvAddr 设置），跳过 remap。
+     */
+    private static final class TunnelingRemotingClient implements RemotingClient {
+        private final RemotingClient delegate;
+        private final ConnectionConfig config;
+
+        TunnelingRemotingClient(RemotingClient delegate, ConnectionConfig config) {
+            this.delegate = delegate;
+            this.config = config;
+        }
+
+        /** 将 broker 地址（ip:port）remap 到 localhost:转发端口；NameServer(localhost)/异常地址原样返回 */
+        private String remap(String addr) {
+            if (addr == null || addr.isEmpty()) return addr;
+            if (addr.startsWith("localhost") || addr.startsWith("127.")) return addr;
+            String[] hp = addr.split(":");
+            if (hp.length != 2) return addr;
+            try {
+                int brokerPort = Integer.parseInt(hp[1].trim());
+                int localPort = SshTunnelManager.ensureBrokerTunnel(config, hp[0].trim(), brokerPort);
+                return "localhost:" + localPort;
+            } catch (NumberFormatException e) {
+                return addr;
+            }
+        }
+
+        @Override
+        public void updateNameServerAddressList(List<String> nameServerAddressList) {
+            delegate.updateNameServerAddressList(nameServerAddressList);
+        }
+
+        @Override
+        public List<String> getNameServerAddressList() {
+            return delegate.getNameServerAddressList();
+        }
+
+        @Override
+        public List<String> getAvailableNameSrvList() {
+            return delegate.getAvailableNameSrvList();
+        }
+
+        @Override
+        public RemotingCommand invokeSync(String addr, RemotingCommand request, long timeout) throws InterruptedException,
+                org.apache.rocketmq.remoting.exception.RemotingConnectException,
+                org.apache.rocketmq.remoting.exception.RemotingSendRequestException,
+                org.apache.rocketmq.remoting.exception.RemotingTimeoutException {
+            return delegate.invokeSync(remap(addr), request, timeout);
+        }
+
+        @Override
+        public void invokeAsync(String addr, RemotingCommand request, long timeout, InvokeCallback callback) throws InterruptedException,
+                org.apache.rocketmq.remoting.exception.RemotingConnectException,
+                org.apache.rocketmq.remoting.exception.RemotingTooMuchRequestException,
+                org.apache.rocketmq.remoting.exception.RemotingTimeoutException,
+                org.apache.rocketmq.remoting.exception.RemotingSendRequestException {
+            delegate.invokeAsync(remap(addr), request, timeout, callback);
+        }
+
+        @Override
+        public void invokeOneway(String addr, RemotingCommand request, long timeout) throws InterruptedException,
+                org.apache.rocketmq.remoting.exception.RemotingConnectException,
+                org.apache.rocketmq.remoting.exception.RemotingTooMuchRequestException,
+                org.apache.rocketmq.remoting.exception.RemotingTimeoutException,
+                org.apache.rocketmq.remoting.exception.RemotingSendRequestException {
+            delegate.invokeOneway(remap(addr), request, timeout);
+        }
+
+        @Override
+        public CompletableFuture<RemotingCommand> invoke(String addr, RemotingCommand request, long timeout) {
+            return delegate.invoke(remap(addr), request, timeout);
+        }
+
+        @Override
+        public void registerProcessor(int requestCode, NettyRequestProcessor processor, ExecutorService executor) {
+            delegate.registerProcessor(requestCode, processor, executor);
+        }
+
+        @Override
+        public void setCallbackExecutor(ExecutorService executor) {
+            delegate.setCallbackExecutor(executor);
+        }
+
+        @Override
+        public boolean isChannelWritable(String addr) {
+            return delegate.isChannelWritable(remap(addr));
+        }
+
+        @Override
+        public boolean isAddressReachable(String addr) {
+            return delegate.isAddressReachable(remap(addr));
+        }
+
+        @Override
+        public void closeChannels(List<String> addrs) {
+            if (addrs == null || addrs.isEmpty()) {
+                delegate.closeChannels(addrs);
+                return;
+            }
+            List<String> remapped = new ArrayList<>(addrs.size());
+            for (String a : addrs) remapped.add(remap(a));
+            delegate.closeChannels(remapped);
+        }
+
+        @Override
+        public void start() {
+            delegate.start();
+        }
+
+        @Override
+        public void shutdown() {
+            delegate.shutdown();
+        }
+
+        @Override
+        public void registerRPCHook(RPCHook rpcHook) {
+            delegate.registerRPCHook(rpcHook);
+        }
+
+        @Override
+        public void setRequestPipeline(RequestPipeline pipeline) {
+            delegate.setRequestPipeline(pipeline);
+        }
+
+        @Override
+        public void clearRPCHook() {
+            delegate.clearRPCHook();
         }
     }
 
@@ -280,8 +558,9 @@ public class RocketmqService {
 
         String consumerGroup = "tomato_query";
         DefaultMQPullConsumer pullConsumer = new DefaultMQPullConsumer(consumerGroup);
-        pullConsumer.setNamesrvAddr(config.getHost() + ":" + config.getPort());
+        pullConsumer.setNamesrvAddr(nameServer(config));
         pullConsumer.start();
+        installTunnelingRemotingClient(pullConsumer, config);
 
         try {
             for (Map.Entry<MessageQueue, TopicOffset> entry : statsTable.getOffsetTable().entrySet()) {
@@ -371,8 +650,9 @@ public class RocketmqService {
 
                     String consumerGroup = "tomato_delayed";
                     DefaultMQPullConsumer pullConsumer = new DefaultMQPullConsumer(consumerGroup);
-                    pullConsumer.setNamesrvAddr(config.getHost() + ":" + config.getPort());
+                    pullConsumer.setNamesrvAddr(nameServer(config));
                     pullConsumer.start();
+                    installTunnelingRemotingClient(pullConsumer, config);
 
                     try {
                         for (Map.Entry<MessageQueue, TopicOffset> entry : statsTable.getOffsetTable().entrySet()) {
@@ -460,6 +740,12 @@ public class RocketmqService {
         }
         List<Map<String, Object>> result = new ArrayList<>();
         for (String group : groupSet) {
+            // 过滤本工具内部临时 pull consumer 组（tomato_query / tomato_delayed / tomato_unconsumed_* 等）。
+            // 这些组用于消息浏览场景的本地拉取，从未在 Broker 上真正订阅注册：
+            // - NameServer 上没有对应的 %RETRY%<group> topic 路由，examineConsumeStats 会抛出
+            //   CODE: 17 DESC: No topic route info in name server for the topic: %RETRY%tomato_xxx
+            // - 用户也不希望看到这些内部组
+            if (group != null && group.startsWith("tomato_")) continue;
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("group", group);
             try {
@@ -482,7 +768,24 @@ public class RocketmqService {
      */
     public static Map<String, Object> getConsumerGroupDetail(ConnectionConfig config, String group) throws Exception {
         DefaultMQAdminExt admin = getAdmin(config);
-        ConsumeStats stats = admin.examineConsumeStats(group);
+        ConsumeStats stats;
+        try {
+            stats = admin.examineConsumeStats(group);
+        } catch (Exception e) {
+            String msg = e.getMessage() == null ? "" : e.getMessage();
+            // CODE 17: No topic route info in name server for the topic: %RETRY%<group>
+            // 通常出现于：该消费者组从未真正消费/订阅过任何topic（Broker上未创建%RETRY%主题），
+            // 或本工具内部临时 pull consumer 组残留。此处不抛异常，返回空数据让UI友好展示。
+            if (msg.contains("CODE: 17") || msg.contains("No topic route info")) {
+                Map<String, Object> empty = new LinkedHashMap<>();
+                empty.put("consumeTps", 0.0);
+                empty.put("totalDiff", 0L);
+                empty.put("offsetTable", Collections.emptyList());
+                empty.put("warning", "该消费者组尚未在Broker上真正消费，%RETRY%主题未创建，无消费统计数据。");
+                return empty;
+            }
+            throw e;
+        }
         Map<String, Object> result = new LinkedHashMap<>();
         if (stats != null) {
             result.put("consumeTps", stats.getConsumeTps());
@@ -657,8 +960,9 @@ public class RocketmqService {
 
         List<Map<String, Object>> result = new ArrayList<>();
         DefaultMQPullConsumer pullConsumer = new DefaultMQPullConsumer("tomato_unconsumed_" + System.currentTimeMillis());
-        pullConsumer.setNamesrvAddr(config.getHost() + ":" + config.getPort());
+        pullConsumer.setNamesrvAddr(nameServer(config));
         pullConsumer.start();
+        installTunnelingRemotingClient(pullConsumer, config);
 
         try {
             for (Map.Entry<MessageQueue, OffsetWrapper> entry : stats.getOffsetTable().entrySet()) {
@@ -752,5 +1056,37 @@ public class RocketmqService {
             map.put("remark", "返回结果为空");
         }
         return map;
+    }
+
+    // ==================== 消息发送 ====================
+
+    /**
+     * 发送消息到指定主题。
+     * tags/keys 可为空；delayLevel=0 表示普通消息，>0 表示延迟消息。
+     * 返回包含 msgId/queueId/queueOffset/topic 的 Map。
+     */
+    public static Map<String, Object> sendMessage(ConnectionConfig config, String topic, String tags, String keys, String body, int delayLevel) throws Exception {
+        DefaultMQProducer producer = new DefaultMQProducer("tomato_producer_" + System.currentTimeMillis());
+        producer.setNamesrvAddr(nameServer(config));
+        producer.start();
+        installTunnelingRemotingClient(producer, config);
+        try {
+            Message msg = new Message(topic, tags != null ? tags : "", body.getBytes("UTF-8"));
+            if (keys != null && !keys.isEmpty()) {
+                msg.setKeys(keys);
+            }
+            if (delayLevel > 0) {
+                msg.setDelayTimeLevel(delayLevel);
+            }
+            SendResult result = producer.send(msg);
+            Map<String, Object> ret = new LinkedHashMap<>();
+            ret.put("msgId", result.getMsgId());
+            ret.put("queueId", result.getMessageQueue().getQueueId());
+            ret.put("queueOffset", result.getQueueOffset());
+            ret.put("topic", result.getMessageQueue().getTopic());
+            return ret;
+        } finally {
+            producer.shutdown();
+        }
     }
 }

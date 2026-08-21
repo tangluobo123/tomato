@@ -4,7 +4,7 @@
 
 .tree-cell {
     -fx-cell-size: 35px;
-    -fx-padding: 0 8;
+    -fx-padding: 0 4 0 2;
     -fx-text-fill: black;
 }
 
@@ -35,34 +35,127 @@
     -fx-text-fill: black;
 }
 
+/* 底部空白占位节点：hover/selected 等所有状态均保持透明背景 */
+.tree-cell.bottom-spacer,
+.tree-cell.bottom-spacer:filled:hover,
+.tree-cell.bottom-spacer:selected,
+.tree-cell.bottom-spacer:focused,
+.tree-cell.bottom-spacer:selected:focused {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+    -fx-text-fill: black;
+}
+
+/* TreeView 根节点样式 - 去除默认边框和内边距 */
+.tree-view {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-border-insets: 0;
+}
+
+.tree-view > .virtual-flow {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.tree-view > .virtual-flow > .clipped-container {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+/* 树节点 disclosure 区域样式 */
+.tree-cell .tree-disclosure-node {
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+}
+
+/* 树节点内容区域样式 */
+.tree-cell .graphic {
+    -fx-padding: 0 4 0 0;
+}
+
+.tree-cell .text {
+    -fx-padding: 0;
+}
+
 /* 终端标签页样式 - Firefox风格 */
 .tab-pane {
     -fx-tab-min-height: 26px;
     -fx-tab-max-height: 26px;
+    -fx-tab-content-padding: 0;
+    -fx-background-color: transparent !important;
+    -fx-background-insets: 0 !important;
+    -fx-padding: 0 !important;
+    -fx-border-color: transparent !important;
+    -fx-border-width: 0 !important;
+    -fx-border-insets: 0 !important;
 }
 
-.tab-pane .tab-header-area {
-    -fx-padding: 0;
-    -fx-background-color: #ececea;
+.tab-pane > .tab-header-area {
+    -fx-padding: 0 !important;
+    -fx-background-color: #ececea !important;
+    -fx-background-insets: 0 !important;
+    -fx-border-color: transparent !important;
+    -fx-border-width: 0 !important;
+    -fx-border-insets: 0 !important;
 }
 
-.tab-pane .tab-header-background {
-    -fx-background-color: #ececea;
+.tab-pane > .tab-header-area > .headers-region {
+    -fx-padding: 0 !important;
+    -fx-background-insets: 0 !important;
+    -fx-border-color: transparent !important;
+    -fx-border-width: 0 !important;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab {
+    -fx-padding: 5 12 !important;
+}
+
+.tab-pane > .tab-header-area > .tab-area {
+    -fx-padding: 0 !important;
+    -fx-background-insets: 0 !important;
+}
+
+.tab-pane > .tab-header-area > .tab-header-background {
+    -fx-background-color: #ececea !important;
+    -fx-background-insets: 0 !important;
+    -fx-background-radius: 0 !important;
+    -fx-border-color: transparent !important;
+    -fx-border-width: 0 !important;
+}
+
+.tab-pane > .tab-content-area {
+    -fx-background-color: transparent !important;
+    -fx-border-color: transparent !important;
+    -fx-border-width: 0 !important;
+    -fx-padding: 0 !important;
+    -fx-background-insets: 0 !important;
+    -fx-border-insets: 0 !important;
 }
 
 .tab-pane .tab {
-    -fx-background-color: #ececea;
-    -fx-background-insets: 0;
-    -fx-background-radius: 0;
+    -fx-background-color: #e0e0e0 !important;
+    -fx-background-insets: 0 !important;
+    -fx-background-radius: 0 !important;
     -fx-padding: 5 12;
-    -fx-border-color: transparent;
+    -fx-border-color: transparent #c0c0c0 #c0c0c0 transparent;
+    -fx-border-width: 0 1px 1px 0;
+    -fx-border-radius: 0;
 }
 
 .tab-pane .tab:selected {
-    -fx-background-color: #DEFFFF, #FCFFFF;
-    -fx-background-insets: 0, 0 0 2 0;
-    -fx-border-color: transparent transparent #000000 transparent;
-    -fx-border-width: 0 0 1 0;
+    -fx-background-color: #FCFFFF !important;
+    -fx-background-insets: 0 !important;
+    -fx-border-color: transparent #c0c0c0 #000000 transparent;
+    -fx-border-width: 0 1px 1px 0;
     -fx-border-radius: 0;
 }
 
@@ -80,7 +173,7 @@
 }
 
 .tab-pane .tab:hover {
-    -fx-background-color: #dedede;
+    -fx-background-color: #d8d8d8;
 }
 
 .tab-pane .tab:selected:hover {
@@ -90,18 +183,41 @@
 .tab-pane .tab:focused {
     -fx-focus-color: transparent;
     -fx-faint-focus-color: transparent;
-    -fx-background-color: #ececea;
+    -fx-background-color: #e0e0e0;
     -fx-background-insets: 0;
+    -fx-border-color: transparent #c0c0c0 #c0c0c0 transparent;
+    -fx-border-width: 0 1px 1px 0;
+    -fx-border-radius: 0;
 }
 
 .tab-pane .tab:selected:focused {
     -fx-focus-color: transparent;
     -fx-faint-focus-color: transparent;
-    -fx-background-color: #DEFFFF, #FCFFFF;
-    -fx-background-insets: 0, 0 0 2 0;
-    -fx-border-color: transparent transparent #000000 transparent;
-    -fx-border-width: 0 0 1 0;
+    -fx-background-color: #FCFFFF;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent #c0c0c0 #000000 transparent;
+    -fx-border-width: 0 1px 1px 0;
     -fx-border-radius: 0;
+}
+
+.tab-pane .tab .tab-container .focus-indicator {
+    -fx-border-color: transparent;
+    -fx-border-insets: 0;
+}
+
+.tab-pane .tab-content-area > * {
+    -fx-padding: 0;
+    -fx-background-insets: 0;
+    -fx-border-insets: 0;
+}
+
+.tab-pane:top-tab .tab-content-area {
+    -fx-padding: 0 !important;
+    -fx-background-insets: 0 !important;
+}
+
+.tab-pane .tab-content-area .tab {
+    -fx-padding: 0;
 }
 
 .tab-pane .tab .tab-container {
@@ -114,15 +230,185 @@
     -fx-border-insets: 0;
 }
 
+.tab-pane .tab .tab-container {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
 .tab-pane .tab .tab-container .focus-indicator {
+    -fx-border-color: transparent !important;
+    -fx-border-insets: 0 !important;
+}
+
+.tab-pane .tab .tab-container {
+    -fx-border-color: transparent !important;
+    -fx-border-width: 0 !important;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.tab-pane .tab:selected .tab-container .focus-indicator {
+    -fx-border-color: transparent !important;
+    -fx-border-insets: 0 !important;
+}
+
+.tab-pane:top-tab .tab-header-area .headers-region .tab .tab-container {
+    -fx-border-color: transparent !important;
+    -fx-border-width: 0 !important;
+}
+
+/* 强制清除tab-content-area的所有默认间距 */
+.tab-pane {
+    -fx-tab-content-padding: 0 !important;
+}
+
+.tab-pane > .tab-content-area {
+    -fx-padding: 0 !important;
+    -fx-background-insets: 0 !important;
+    -fx-border-insets: 0 !important;
+}
+
+.tab-pane:top-tab > .tab-content-area {
+    -fx-padding: 0 !important;
+    -fx-background-insets: 0 !important;
+}
+
+/* 清除tab-content-area内所有子节点的默认间距 */
+.tab-pane > .tab-content-area > * {
+    -fx-padding: 0 !important;
+    -fx-background-insets: 0 !important;
+    -fx-border-insets: 0 !important;
+}
+
+/* 清除ScrollPane在tab-content内的默认间距 */
+.tab-pane .tab-content-area .scroll-pane {
+    -fx-padding: 0 !important;
+    -fx-background-insets: 0 !important;
+    -fx-border-insets: 0 !important;
+}
+
+.tab-pane .tab-content-area .scroll-pane > .viewport {
+    -fx-padding: 0 !important;
+    -fx-background-insets: 0 !important;
+    -fx-border-insets: 0 !important;
+}
+
+.tab-pane .tab-content-area .scroll-pane > .viewport > .content {
+    -fx-padding: 0 !important;
+    -fx-background-insets: 0 !important;
+    -fx-border-insets: 0 !important;
+}
+
+/* 清除StackPane在tab-content内的默认间距 */
+.tab-pane .tab-content-area .stack-pane {
+    -fx-padding: 0 !important;
+    -fx-background-insets: 0 !important;
+    -fx-border-insets: 0 !important;
+}
+
+/* 清除所有Region在tab-content内的默认间距 */
+.tab-pane .tab-content-area .region {
+    -fx-padding: 0 !important;
+    -fx-background-insets: 0 !important;
+    -fx-border-insets: 0 !important;
+}
+
+/* 深度清除tab-content内所有层级容器的间距 */
+.tab-pane .tab-content-area .border-pane,
+.tab-pane .tab-content-area .anchor-pane,
+.tab-pane .tab-content-area .flow-pane,
+.tab-pane .tab-content-area .grid-pane,
+.tab-pane .tab-content-area .tile-pane,
+.tab-pane .tab-content-area .hbox,
+.tab-pane .tab-content-area .vbox {
+    -fx-padding: 0 !important;
+    -fx-background-insets: 0 !important;
+    -fx-border-insets: 0 !important;
+}
+
+/* 深度清除table-view外层容器 */
+.tab-pane .tab-content-area .table-view {
+    -fx-padding: 0 !important;
+    -fx-background-insets: 0 !important;
+    -fx-border-insets: 0 !important;
+}
+
+/* 深度清除table-view内部所有节点的边距 */
+.tab-pane .tab-content-area .table-view > * {
+    -fx-padding: 0 !important;
+    -fx-background-insets: 0 !important;
+    -fx-border-insets: 0 !important;
+}
+
+.tab-pane .tab-content-area .table-view .column-header-background,
+.tab-pane .tab-content-area .table-view .nested-column-header,
+.tab-pane .tab-content-area .table-view .virtual-flow,
+.tab-pane .tab-content-area .table-view .clipped-container,
+.tab-pane .tab-content-area .table-view .sheet,
+.tab-pane .tab-content-area .table-view .placeholder,
+.tab-pane .tab-content-area .table-view .filler {
+    -fx-padding: 0 !important;
+    -fx-background-insets: 0 !important;
+    -fx-border-insets: 0 !important;
+}
+
+/* 针对无间距标签页的特殊样式 */
+.no-gap-tab-pane > .tab-content-area {
+    -fx-padding: 0 !important;
+    -fx-background-insets: 0 !important;
+    -fx-border-insets: 0 !important;
+}
+
+.no-gap-tab-pane:top-tab > .tab-content-area {
+    -fx-padding: 0 !important;
+    -fx-background-insets: 0 !important;
+}
+
+.no-gap-tab-pane .tab-content-area {
+    -fx-padding: 0 !important;
+}
+
+/* 设计表标签页：高度调低至约3/4 (26px→20px) */
+.design-tab-pane {
+    -fx-tab-min-height: 20px !important;
+    -fx-tab-max-height: 20px !important;
+}
+.design-tab-pane > .tab-header-area > .headers-region > .tab {
+    -fx-padding: 2 12 !important;
+}
+.design-tab-pane .tab {
+    -fx-padding: 2 12 !important;
+}
+
+/* SplitPane: 去除默认立体背景和边框 */
+.split-pane {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
     -fx-border-color: transparent;
+    -fx-border-width: 0;
     -fx-border-insets: 0;
 }
 
-.tab-pane .tab-content-area {
-    -fx-background-color: #f7f7f7;
+/* SplitPane 分隔条: 去除立体效果和缝隙 */
+.split-pane > .split-pane-divider {
+    -fx-background-color: #E5E5E5;
+    -fx-background-insets: 0;
+    -fx-padding: 0 1 0 0;
     -fx-border-color: transparent;
-    -fx-padding: 0;
+    -fx-border-width: 0;
+}
+
+.split-pane:horizontal > .split-pane-divider {
+    -fx-background-color: #E5E5E5;
+    -fx-padding: 0 1 0 0;
+    -fx-border-color: transparent;
+}
+
+.split-pane:vertical > .split-pane-divider {
+    -fx-background-color: #E5E5E5;
+    -fx-padding: 0 0 0 1;
+    -fx-border-color: transparent;
 }
 
 .combo-box, .combo-box-base {
@@ -244,6 +530,12 @@
     -fx-text-fill: #333333;
 }
 
+/* 键盘 focus 高亮：上下箭头移动的"待选"项（不修改类型值，回车才提交） */
+.combo-box-popup .list-cell:focused {
+    -fx-background-color: #3592CB;
+    -fx-text-fill: white;
+}
+
 .combo-box-connection .text-field {
     -fx-background-image: url('../images/connect/mysql_open.png');
     -fx-background-repeat: no-repeat;
@@ -329,6 +621,30 @@
     -fx-background-color: #C0DCF3;
     -fx-border-color: #90C8F6;
     -fx-border-width: 1px;
+}
+
+/* 视图切换按钮：背景与图标同尺寸，透明背景，仅保留按下效果 */
+.view-toggle-btn {
+    -fx-background-color: transparent;
+    -fx-background-radius: 3;
+    -fx-background-insets: 0;
+    -fx-border-width: 0;
+    -fx-border-insets: 0;
+    -fx-padding: 0;
+    -fx-min-width: 0;
+    -fx-min-height: 0;
+    -fx-content-display: GRAPHIC_ONLY;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.view-toggle-btn:hover {
+    -fx-background-color: #E5E5E5;
+}
+
+.view-toggle-btn:pressed,
+.view-toggle-btn:selected {
+    -fx-background-color: #D0D0D0;
 }
 
 /* 方框复选框样式 */
@@ -430,6 +746,36 @@
     -fx-padding: 0;
 }
 
+/* 设计表（TableStructureView）：未被 ScrollPane 包裹，恢复 TableView 内部水平滚动条 */
+.design-table-view .virtual-flow .scroll-bar:horizontal {
+    -fx-opacity: 1;
+    -fx-pref-height: 15;
+    -fx-min-height: 15;
+    -fx-max-height: 15;
+}
+
+.design-table-view .virtual-flow .scroll-bar:horizontal .track,
+.design-table-view .virtual-flow .scroll-bar:horizontal .thumb {
+    -fx-pref-height: 15;
+    -fx-min-height: 15;
+    -fx-max-height: 15;
+}
+
+/* 打开表（TableDataView）：ScrollPane 仅填充视口，恢复 TableView 内部水平滚动条 */
+.data-table-view .virtual-flow .scroll-bar:horizontal {
+    -fx-opacity: 1;
+    -fx-pref-height: 15;
+    -fx-min-height: 15;
+    -fx-max-height: 15;
+}
+
+.data-table-view .virtual-flow .scroll-bar:horizontal .track,
+.data-table-view .virtual-flow .scroll-bar:horizontal .thumb {
+    -fx-pref-height: 15;
+    -fx-min-height: 15;
+    -fx-max-height: 15;
+}
+
 .table-view .corner {
     -fx-background-color: transparent;
     -fx-padding: 0;
@@ -444,14 +790,20 @@
     -fx-border-width: 0;
 }
 
-/* 每个列头：设置表头背景色，右边框为列分隔线，底部边框为表头与数据区分隔线 */
+/* 每个列头：扁平背景（去除立体感），右边框为列分隔线，底部边框为表头与数据区分隔线 */
 .table-view .column-header {
     -fx-padding: 0;
     -fx-background-insets: 0;
-    -fx-background-color: -fx-body-color;
+    -fx-background-color: #F5F5F5;
     -fx-border-color: transparent #DADAD8 #cccccc transparent;
     -fx-border-width: 0 1 1 0;
     -fx-size: -fx-table-header-height;
+}
+
+/* 行选择器列头：补齐左侧网格线（与单元格边框色 #BEBEBC 一致），右下沿用通用规则 */
+.table-view .column-header.row-selector-col {
+    -fx-border-color: #BEBEBC #BEBEBC #cccccc #BEBEBC;
+    -fx-border-width: 0 1 1 1;
 }
 
 /* filler：白色背景，无无边框，与数据行背景一致 */
@@ -521,6 +873,7 @@
     -fx-border-color: transparent #e0e0e0 #e0e0e0 transparent;
     -fx-border-width: 0 1 1 0;
     -fx-padding: 4 6;
+    -fx-alignment: CENTER_LEFT;
 }
 
 /* TableRow背景白色且无边框，与cell背景一致；
@@ -553,4 +906,252 @@
 .sftp-file-table .table-row-cell:empty .table-cell {
     -fx-border-color: transparent;
     -fx-padding: 0;
+}
+
+/* Trae会话管理列表 ScrollPane: 去除viewport默认间距，让选中项背景铺满宽度 */
+.session-scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-border-insets: 0;
+}
+
+.session-scroll-pane > .viewport {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-border-insets: 0;
+}
+
+.session-scroll-pane > .viewport > .content {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-border-insets: 0;
+}
+
+/* RichTextFX VirtualizedScrollPane: 清除viewport默认间距 */
+.virtualized-scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-border-insets: 0;
+}
+
+.virtualized-scroll-pane > .viewport {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-border-insets: 0;
+}
+
+.virtualized-scroll-pane > .viewport > .content {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-border-insets: 0;
+}
+
+/* RichTextFX styled-text-area: 清除默认padding */
+.styled-text-area {
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.styled-text-area .paragraph-box {
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.styled-text-area .paragraph-box .paragraph-text {
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+/* RichTextFX virtualized-flow: 清除渲染容器默认间距 */
+.virtualized-scroll-pane > .viewport > .virtualized-flow {
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.virtualized-scroll-pane > .viewport > .virtualized-flow > .clipped-container {
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.virtualized-scroll-pane > .viewport > .virtualized-flow > .clipped-container > .sheet {
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+/* Trae会话管理 ListView：深度清除默认间距，让内容紧贴容器边缘 */
+.trae-session-task-list {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-border-insets: 0;
+    -fx-cell-size: -1;
+}
+
+.trae-session-task-list > .virtual-flow {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-border-color: transparent;
+    -fx-border-insets: 0;
+}
+
+.trae-session-task-list > .virtual-flow > .clipped-container {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-border-color: transparent;
+    -fx-border-insets: 0;
+}
+
+.trae-session-task-list > .virtual-flow > .clipped-container > .sheet {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-border-color: transparent;
+    -fx-border-insets: 0;
+}
+
+.trae-session-task-list .list-cell {
+    -fx-padding: 0;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-border-insets: 0;
+    -fx-cell-size: -1;
+}
+
+.trae-session-task-list .placeholder {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-border-color: transparent;
+    -fx-border-insets: 0;
+}
+
+/* 数据表单元格：内容垂直居中、水平左对齐 */
+.table-view .data-cell {
+    -fx-alignment: center-left;
+}
+
+/* 表头：内容垂直居中 */
+.table-view .column-header {
+    -fx-alignment: center;
+}
+
+/* ==================== 对象视图：详细列表表格样式 ====================
+   表头背景白色（与数据行一致），去掉所有表格线，只保留表头列间竖线分隔
+===================================================================== */
+.objects-detail-table .column-header-background {
+    -fx-background-color: white;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+    -fx-background-insets: 0;
+}
+
+.objects-detail-table .column-header-background .nested-column-header {
+    -fx-background-color: white;
+    -fx-padding: 0;
+    -fx-background-insets: 0;
+}
+
+/* 列头：白底 + 仅右侧1px竖线分隔，去掉底部线（无表头/数据区边界） */
+.objects-detail-table .column-header {
+    -fx-background-color: white;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-border-color: transparent #E5E5E5 transparent transparent;
+    -fx-border-width: 0 1 0 0;
+}
+
+.objects-detail-table .column-header .label {
+    -fx-background-color: white;
+    -fx-padding: 4 8 4 8;
+    -fx-font-size: 12px;
+}
+
+.objects-detail-table .column-header-background .filler {
+    -fx-background-color: white;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+    -fx-background-insets: 0;
+}
+
+/* 数据行与单元格：白底，无任何边框线，取消行列线 */
+.objects-detail-table .table-row-cell {
+    -fx-background-color: white;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.objects-detail-table .table-row-cell:odd {
+    -fx-background-color: white;
+    -fx-background-insets: 0;
+}
+
+.objects-detail-table .table-row-cell:empty {
+    -fx-background-color: white;
+    -fx-border-color: transparent;
+}
+
+.objects-detail-table .table-row-cell:empty .table-cell {
+    -fx-border-color: transparent;
+}
+
+.objects-detail-table .table-cell {
+    -fx-background-color: white;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 4 8 4 8;
+    -fx-font-size: 12px;
+}
+
+/* 悬停和选中状态保持可读性 */
+/* 未选中行划过：custom-hover 由 Java 代码（TableRow 的 MOUSE_MOVED 事件过滤器 +
+   PickResult 判断）根据鼠标是否落在 TableCell 上动态添加/移除。
+   鼠标在行内右侧空白区域时移除 custom-hover，整行 cell 保持白色。
+   注意：JavaFX CSS 不支持 :not()，选中行靠 :selected 后定义覆盖 custom-hover。 */
+.objects-detail-table .table-row-cell:filled .table-cell {
+    -fx-background-color: white;
+}
+
+.objects-detail-table .table-row-cell.custom-hover .table-cell {
+    -fx-background-color: #D8E6F2;
+}
+
+/* 选中行：仅单元格蓝色背景，行背景保持白色（右侧空白列也保持白色，与 .table-view 一致） */
+.objects-detail-table .table-row-cell:selected {
+    -fx-background-color: white;
+}
+
+.objects-detail-table .table-row-cell:selected .table-cell {
+    -fx-background-color: #3592CB;
+    -fx-text-fill: white;
+}
+
+.objects-detail-table .table-row-cell:selected .table-cell .label {
+    -fx-text-fill: white;
 }

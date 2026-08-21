@@ -98,6 +98,10 @@ public class SshTunnel {
         }
 
         session.setConfig("StrictHostKeyChecking", "no");
+        // 开启SSH服务端保活：每10s发送keepalive，连续3次未响应则判定连接已断开，
+        // 使 session.isConnected() 能在约30s内反映出真实连接状态，避免隧道已死但isActive()仍返回true导致复用死端口无法重连。
+        session.setServerAliveInterval(10000);
+        session.setServerAliveCountMax(3);
         session.connect(30000);
 
         // 分配本地空闲端口

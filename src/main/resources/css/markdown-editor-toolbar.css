@@ -1,0 +1,52 @@
+/*
+ * Markdown 编辑器工具栏样式
+ * 参考 markdown-writer-fx (https://github.com/JFormDesigner/markdown-writer-fx) MarkdownWriter.css
+ */
+
+.markdown-tool-bar {
+    -fx-spacing: 0;
+    -fx-background-color: derive(-fx-background, 25%);
+    -fx-padding: 2 4 2 4;
+    -fx-border-color: -fx-outer-border;
+    -fx-border-width: 0 0 1 0;
+}
+
+.markdown-tool-bar .button,
+.markdown-tool-bar .toggle-button {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 3;
+    -fx-padding: 0.4em 0.55em;
+}
+
+.markdown-tool-bar .button:hover,
+.markdown-tool-bar .toggle-button:hover {
+    -fx-background-color: -fx-shadow-highlight-color, -fx-outer-border, -fx-inner-border, -fx-body-color;
+    -fx-color: -fx-hover-base;
+}
+
+.markdown-tool-bar .button:armed,
+.markdown-tool-bar .toggle-button:armed {
+    -fx-color: -fx-pressed-base;
+}
+
+.markdown-tool-bar .toggle-button:selected {
+    -fx-background-color: -fx-pressed-base, -fx-outer-border, -fx-inner-border, -fx-body-color;
+}
+
+/* 图标默认深灰，hover 时变蓝 */
+.markdown-tool-bar .glyph-icon {
+    -fx-font-size: 14px;
+    -fx-fill: #444;
+}
+
+.markdown-tool-bar .button:hover .glyph-icon,
+.markdown-tool-bar .toggle-button:hover .glyph-icon,
+.markdown-tool-bar .toggle-button:selected .glyph-icon {
+    -fx-fill: #1a73e8;
+}
+
+/* 保存按钮图标用绿色 */
+.markdown-tool-bar .save-button .glyph-icon {
+    -fx-fill: #07c160;
+}

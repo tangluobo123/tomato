@@ -72,7 +72,9 @@ public class MonitorPanel extends BorderPane {
 
     private void initUI() {
         setStyle("-fx-background-color: #FFFFFF;");
-        setPrefHeight(350);
+        // 4个图表(各80px) + topBar + VBox padding/spacing ≈ 400px，确保所有图表完整显示
+        setPrefHeight(400);
+        setMinHeight(250);
 
         HBox topBar = new HBox();
         topBar.setStyle("-fx-background-color: #f5f5f5; -fx-padding: 4 8; -fx-alignment: center-left;");

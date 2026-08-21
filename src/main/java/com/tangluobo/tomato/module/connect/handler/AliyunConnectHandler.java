@@ -1,12 +1,11 @@
 package com.tangluobo.tomato.module.connect.handler;
 
 import com.tangluobo.tomato.module.connect.*;
+import com.tangluobo.tomato.module.connect.dialog.PasswordPromptDialog;
 import com.tangluobo.tomato.module.connect.service.AliyunService;
 import com.tangluobo.tomato.module.connect.view.AliyunDomainDataView;
 import javafx.application.Platform;
 import javafx.scene.control.*;
-import javafx.scene.layout.GridPane;
-import javafx.geometry.Insets;
 import java.util.List;
 import java.util.Map;
 
@@ -37,25 +36,16 @@ public class AliyunConnectHandler implements ConnectHandler {
 
         // 如果SK未保存，弹窗输入
         if (config.getPassword() == null || config.getPassword().isEmpty()) {
-            Dialog<String> skDialog = new Dialog<>();
-            skDialog.setTitle("输入Secret Key");
-            skDialog.setHeaderText(config.getName() + " (" + config.getUsername() + ")");
-            skDialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-            GridPane grid = new GridPane();
-            grid.setHgap(10);
-            grid.setVgap(10);
-            grid.setPadding(new Insets(20, 10, 10, 10));
-            PasswordField pf = new PasswordField();
-            pf.setPrefWidth(250);
-            pf.setPromptText("AccessKey Secret");
-            grid.add(new Label("Secret Key："), 0, 0);
-            grid.add(pf, 1, 0);
-            skDialog.getDialogPane().setContent(grid);
-            skDialog.setResultConverter(dialogButton -> dialogButton == ButtonType.OK ? pf.getText() : null);
-            final String[] skHolder = new String[1];
-            skDialog.showAndWait().ifPresentOrElse(sk -> skHolder[0] = sk, () -> {});
-            if (skHolder[0] == null || skHolder[0].isEmpty()) return;
-            config.setPassword(skHolder[0]);
+            PasswordPromptDialog.Result pwdResult = PasswordPromptDialog.show(
+                    "输入Secret Key",
+                    config.getName() + " (" + config.getUsername() + ")",
+                    "Secret Key：", "AccessKey Secret", "保存密钥");
+            if (pwdResult == null || pwdResult.getPassword() == null || pwdResult.getPassword().isEmpty()) return;
+            config.setPassword(pwdResult.getPassword());
+            if (pwdResult.isSavePassword()) {
+                config.setSavePassword(true);
+                module.saveConnections();
+            }
         }
 
         ProgressIndicator loadingIndicator = new ProgressIndicator();
@@ -214,7 +204,7 @@ public class AliyunConnectHandler implements ConnectHandler {
             javafx.scene.image.ImageView tabIconView = new javafx.scene.image.ImageView(aliyunIcon);
             tabIconView.setFitWidth(18);
             tabIconView.setFitHeight(18);
-            tab.setGraphic(tabIconView);
+            tab.setGraphic(ConnectModule.createFixedSizeGraphic(tabIconView));
         } catch (Exception ignored) {}
 
         tab.setContent(domainView);

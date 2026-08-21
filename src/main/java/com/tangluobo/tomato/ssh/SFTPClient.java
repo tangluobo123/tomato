@@ -16,6 +16,7 @@ import java.util.Vector;
 public class SFTPClient {
 
     private ChannelSftp channel;
+    private Session session;
     private boolean connected = false;
 
     /**
@@ -46,21 +47,38 @@ public class SFTPClient {
     /**
      * 连接SFTP通道（复用已有的SSH Session）
      */
-    public void connect(Session sshSession) throws Exception {
+    public synchronized void connect(Session sshSession) throws Exception {
+        this.session = sshSession;
         if (connected && channel != null && channel.isConnected()) return;
+        if (channel != null) {
+            try { channel.disconnect(); } catch (Exception ignored) {}
+        }
         channel = (ChannelSftp) sshSession.openChannel("sftp");
         channel.connect(10000);
         connected = true;
     }
 
-    public boolean isConnected() {
+    /**
+     * 重新连接SFTP通道（复用已有的SSH Session）
+     */
+    public synchronized void reconnect() throws Exception {
+        if (session == null) throw new IllegalStateException("SSH Session 未初始化");
+        if (channel != null) {
+            try { channel.disconnect(); } catch (Exception ignored) {}
+        }
+        channel = (ChannelSftp) session.openChannel("sftp");
+        channel.connect(10000);
+        connected = true;
+    }
+
+    public synchronized boolean isConnected() {
         return connected && channel != null && channel.isConnected();
     }
 
     /**
      * 列出目录下的文件
      */
-    public List<FileEntry> listFiles(String path) throws SftpException {
+    public synchronized List<FileEntry> listFiles(String path) throws SftpException {
         Vector<ChannelSftp.LsEntry> entries = channel.ls(path);
         List<FileEntry> result = new ArrayList<>();
         for (ChannelSftp.LsEntry entry : entries) {
@@ -82,21 +100,21 @@ public class SFTPClient {
     /**
      * 获取当前工作目录
      */
-    public String pwd() throws SftpException {
+    public synchronized String pwd() throws SftpException {
         return channel.pwd();
     }
 
     /**
      * 切换目录
      */
-    public void cd(String path) throws SftpException {
+    public synchronized void cd(String path) throws SftpException {
         channel.cd(path);
     }
 
     /**
      * 下载文件或目录（自动递归处理目录）
      */
-    public void download(String remotePath, String localPath) throws SftpException {
+    public synchronized void download(String remotePath, String localPath) throws SftpException {
         SftpATTRS attrs = channel.stat(remotePath);
         if (attrs.isDir()) {
             downloadDir(remotePath, localPath);
@@ -108,7 +126,7 @@ public class SFTPClient {
     /**
      * 递归下载远程目录到本地
      */
-    public void downloadDir(String remotePath, String localPath) throws SftpException {
+    public synchronized void downloadDir(String remotePath, String localPath) throws SftpException {
         File localDir = new File(localPath);
         if (!localDir.exists()) localDir.mkdirs();
 
@@ -129,7 +147,7 @@ public class SFTPClient {
     /**
      * 上传文件或目录（自动递归处理目录）
      */
-    public void upload(String localPath, String remotePath) throws SftpException {
+    public synchronized void upload(String localPath, String remotePath) throws SftpException {
         File localFile = new File(localPath);
         if (localFile.isDirectory()) {
             uploadDir(localPath, remotePath);
@@ -141,7 +159,7 @@ public class SFTPClient {
     /**
      * 递归上传本地目录到远程
      */
-    public void uploadDir(String localPath, String remotePath) throws SftpException {
+    public synchronized void uploadDir(String localPath, String remotePath) throws SftpException {
         File localDir = new File(localPath);
         // 确保远程目录存在
         try {
@@ -164,35 +182,35 @@ public class SFTPClient {
     /**
      * 上传文件（从InputStream）
      */
-    public void upload(InputStream src, String remotePath) throws SftpException {
+    public synchronized void upload(InputStream src, String remotePath) throws SftpException {
         channel.put(src, remotePath);
     }
 
     /**
      * 创建目录
      */
-    public void mkdir(String path) throws SftpException {
+    public synchronized void mkdir(String path) throws SftpException {
         channel.mkdir(path);
     }
 
     /**
      * 删除文件
      */
-    public void rm(String path) throws SftpException {
+    public synchronized void rm(String path) throws SftpException {
         channel.rm(path);
     }
 
     /**
      * 删除目录
      */
-    public void rmdir(String path) throws SftpException {
+    public synchronized void rmdir(String path) throws SftpException {
         channel.rmdir(path);
     }
 
     /**
      * 获取文件属性
      */
-    public boolean exists(String path) {
+    public synchronized boolean exists(String path) {
         try {
             channel.stat(path);
             return true;
@@ -204,7 +222,7 @@ public class SFTPClient {
     /**
      * 断开SFTP连接
      */
-    public void disconnect() {
+    public synchronized void disconnect() {
         connected = false;
         if (channel != null) {
             channel.disconnect();

@@ -74,7 +74,7 @@ public class DesktopShortcutPane extends VBox {
         HBox titleBar = new HBox(10);
         titleBar.setAlignment(Pos.CENTER_LEFT);
         titleBar.setPadding(new Insets(14, 20, 14, 20));
-        titleBar.setStyle("-fx-background-color: #f7f8fa; -fx-border-color: #e8e8e8; -fx-border-width: 0 0 1 0;");
+        titleBar.setStyle("-fx-background-color: #f7f8fa; -fx-border-color: #e8e8e8; -fx-border-width: 0 0 0 0;");
         SVGPath titleIcon = new SVGPath();
         titleIcon.setContent("M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z");
         titleIcon.setFill(Color.web("#1976D2"));
@@ -92,6 +92,8 @@ public class DesktopShortcutPane extends VBox {
         TabPane tabPane = new TabPane();
         tabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
         tabPane.getStylesheets().add(getClass().getResource("/css/connect-tree.css").toExternalForm());
+        tabPane.setStyle("-fx-background-color: transparent; -fx-padding: 0; -fx-border-color: transparent; -fx-border-width: 0; -fx-tab-content-padding: 0;");
+        tabPane.getStyleClass().add("no-gap-tab-pane");
 
         // 基础设置标签页
         Tab basicTab = new Tab("基础设置");
@@ -119,7 +121,7 @@ public class DesktopShortcutPane extends VBox {
     private ScrollPane createBasicTabContent() {
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToWidth(true);
-        scrollPane.setStyle("-fx-background-color: transparent; -fx-border-color: transparent;");
+        scrollPane.setStyle("-fx-background-color: transparent; -fx-border-color: transparent; -fx-border-width: 0; -fx-padding: 0; -fx-background-insets: 0; -fx-border-insets: 0;");
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
 
@@ -249,7 +251,7 @@ public class DesktopShortcutPane extends VBox {
     private ScrollPane createAdvancedTabContent() {
         ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToWidth(true);
-        scrollPane.setStyle("-fx-background-color: transparent; -fx-border-color: transparent;");
+        scrollPane.setStyle("-fx-background-color: transparent; -fx-border-color: transparent; -fx-border-width: 0; -fx-padding: 0; -fx-background-insets: 0; -fx-border-insets: 0;");
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
 

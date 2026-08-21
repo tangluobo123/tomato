@@ -1,6 +1,8 @@
 package com.tangluobo.tomato.module.connect.service;
 
+import com.tangluobo.tomato.module.connect.ConfigManager;
 import com.tangluobo.tomato.module.connect.ConnectionConfig;
+import com.tangluobo.tomato.module.connect.SshTunnel;
 import redis.clients.jedis.*;
 import redis.clients.jedis.params.ScanParams;
 import redis.clients.jedis.resps.ScanResult;
@@ -14,6 +16,9 @@ public class RedisService {
     // 缓存JedisCluster实例，key为集群节点配置的字符串表示
     private static final Map<String, JedisCluster> clusterCache = new ConcurrentHashMap<>();
 
+    // SSH隧道缓存：configId + "_" + targetHost:targetPort -> SshTunnel
+    private static final Map<String, SshTunnel> tunnelCache = new ConcurrentHashMap<>();
+
     /**
      * 获取Jedis连接（单机模式）
      */
@@ -21,6 +26,14 @@ public class RedisService {
         try {
             String host = config.getHost();
             int port = config.getPort();
+
+            // SSH隧道（引用方式：根据 sshTunnelHostId 查找SSH主机配置建立端口转发）
+            if (config.isUseSshTunnel() && config.getSshTunnelHostId() != null) {
+                int localPort = setupSshTunnel(config, host, port);
+                host = "localhost";
+                port = localPort;
+            }
+
             Jedis jedis = new Jedis(host, port);
             String password = config.getPassword();
             String username = config.getUsername();
@@ -35,6 +48,74 @@ public class RedisService {
         } catch (Exception e) {
             throw new RuntimeException("连接Redis失败: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * 建立/复用 SSH 隧道，返回本地转发端口号。
+     * 隧道通过引用的 SSH 主机（sshTunnelHostId）建立，目标为 Redis 的 host:port。
+     */
+    private static int setupSshTunnel(ConnectionConfig config, String targetHost, int targetPort) throws Exception {
+        String tunnelKey = config.getId() + "_" + targetHost + ":" + targetPort;
+        SshTunnel tunnel = tunnelCache.get(tunnelKey);
+        if (tunnel != null && tunnel.isActive()) {
+            return tunnel.getForwardedLocalPort();
+        }
+
+        // 查找引用的 SSH 主机配置
+        ConnectionConfig sshHost = findSshHostConfig(config.getSshTunnelHostId());
+        if (sshHost == null) {
+            throw new RuntimeException("找不到引用的SSH主机配置(ID: " + config.getSshTunnelHostId() + ")");
+        }
+
+        // 用 SSH 主机的认证信息建立隧道，目标为 Redis 的 host:port
+        List<String> keyPaths = sshHost.isUseKey() ? sshHost.getPrivateKeyPaths() : null;
+        String password = sshHost.isUsePassword() ? sshHost.getPassword() : null;
+        if (!sshHost.isUsePassword() && sshHost.isUseKey() && sshHost.getPassword() != null) {
+            password = sshHost.getPassword();
+        }
+
+        tunnel = new SshTunnel(
+            sshHost.getHost(),
+            sshHost.getPort(),
+            sshHost.getUsername(),
+            password,
+            keyPaths,
+            targetHost,
+            targetPort
+        );
+        int localPort = tunnel.connect();
+        tunnelCache.put(tunnelKey, tunnel);
+
+        return localPort;
+    }
+
+    /**
+     * 根据 sshTunnelHostId 查找引用的 SSH 主机配置
+     */
+    private static ConnectionConfig findSshHostConfig(String hostId) {
+        if (hostId == null) return null;
+        try {
+            List<ConnectionConfig> all = ConfigManager.loadConnections();
+            for (ConnectionConfig c : all) {
+                if (hostId.equals(c.getId())) return c;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * 关闭指定连接的所有 SSH 隧道（关闭Redis主机连接/标签页时调用）
+     */
+    public static void closeSshTunnel(String configId) {
+        tunnelCache.entrySet().removeIf(entry -> {
+            if (entry.getKey().startsWith(configId + "_")) {
+                entry.getValue().disconnect();
+                return true;
+            }
+            return false;
+        });
     }
 
     /**

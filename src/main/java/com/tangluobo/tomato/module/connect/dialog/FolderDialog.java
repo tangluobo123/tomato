@@ -8,6 +8,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import com.tangluobo.tomato.utils.DialogPositionUtil;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
@@ -58,6 +59,7 @@ public class FolderDialog {
 
         Scene scene = new Scene(root);
         dialogStage.setScene(scene);
+        DialogPositionUtil.centerOnOwner(dialogStage, parent);
     }
 
     public String showAndWait() {

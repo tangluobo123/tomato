@@ -4,13 +4,13 @@ import com.tangluobo.tomato.module.connect.ConnectModule;
 import com.tangluobo.tomato.module.connect.ConnectType;
 import com.tangluobo.tomato.module.connect.ConnectionConfig;
 import com.tangluobo.tomato.module.connect.GlobalConfig;
+import com.tangluobo.tomato.module.connect.SshTunnelManager;
 import com.tangluobo.tomato.module.connect.dialog.GlobalConfigDialog;
+import com.tangluobo.tomato.module.connect.dialog.PasswordPromptDialog;
 import com.tangluobo.tomato.module.connect.dialog.SessionConfigDialog;
 import com.tangluobo.tomato.ssh.SSHTerminalPane;
 import javafx.application.Platform;
-import javafx.geometry.Insets;
 import javafx.scene.control.*;
-import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 
 import java.util.List;
@@ -74,6 +74,7 @@ public class SshTerminalConnectHandler implements ConnectHandler {
 
         tab.setOnClosed(e -> {
             terminalPane.disconnect();
+            SshTunnelManager.release(config);
             if (module.getTerminalTabPane().getTabs().isEmpty()) {
                 module.showWelcomeView();
             }
@@ -83,6 +84,18 @@ public class SshTerminalConnectHandler implements ConnectHandler {
         module.getTerminalTabPane().getSelectionModel().select(tab);
         module.showTerminalView();
 
+        // 注入跳板隧道解析回调：重连时判断是否重建隧道。
+        // 先 peek 复用活跃隧道（不改变引用计数，避免误断共享隧道）；
+        // 隧道已失效则 release 旧引用并 resolve 重建（引用计数保持平衡，未使用隧道时两步均为 -1）。
+        terminalPane.setTunnelResolver(() -> {
+            int p = SshTunnelManager.peek(config);
+            if (p != -1) {
+                return p;
+            }
+            SshTunnelManager.release(config);
+            return SshTunnelManager.resolve(config);
+        });
+
         doConnect(module, terminalPane, config);
     }
 
@@ -91,46 +104,56 @@ public class SshTerminalConnectHandler implements ConnectHandler {
      */
     private void doConnect(ConnectModule module, SSHTerminalPane terminalPane, ConnectionConfig config) {
         if (config.isUsePassword() && config.getPassword() == null) {
-            Dialog<String> pwdDialog = new Dialog<>();
-            pwdDialog.setTitle("输入密码");
-            pwdDialog.setHeaderText(config.getName() + " (" + config.getUsername() + "@" + config.getHost() + ")");
-            pwdDialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-
-            GridPane grid = new GridPane();
-            grid.setHgap(10);
-            grid.setVgap(10);
-            grid.setPadding(new Insets(20, 10, 10, 10));
-            PasswordField pf = new PasswordField();
-            pf.setPrefWidth(250);
-            grid.add(new Label("密码："), 0, 0);
-            grid.add(pf, 1, 0);
-            pwdDialog.getDialogPane().setContent(grid);
-
-            pwdDialog.setResultConverter(dialogButton -> {
-                if (dialogButton == ButtonType.OK) {
-                    return pf.getText();
-                }
-                return null;
-            });
-
-            pwdDialog.showAndWait().ifPresentOrElse(pwd -> {
-                if (pwd.isEmpty()) return;
-                connectWithAuth(terminalPane, config, pwd);
-            }, () -> {});
+            PasswordPromptDialog.Result pwdResult = PasswordPromptDialog.show(
+                    "输入密码",
+                    config.getName() + " (" + config.getUsername() + "@" + config.getHost() + ")",
+                    "密码：", null, "保存密码");
+            if (pwdResult == null || pwdResult.getPassword() == null || pwdResult.getPassword().isEmpty()) return;
+            config.setPassword(pwdResult.getPassword());
+            if (pwdResult.isSavePassword()) {
+                config.setSavePassword(true);
+                module.saveConnections();
+            }
+            connectWithAuth(terminalPane, config, pwdResult.getPassword());
         } else {
             connectWithAuth(terminalPane, config, config.getPassword());
         }
     }
 
     /**
-     * 后台建立 SSH 连接
+     * 后台建立 SSH 连接（若配置了SSH跳板隧道则先建立隧道，再连接 localhost:转发端口）
      */
     private void connectWithAuth(SSHTerminalPane terminalPane, ConnectionConfig config, String password) {
         List<String> keyPaths = config.isUseKey() ? config.getPrivateKeyPaths() : null;
         new Thread(() -> {
+            // 先建立/复用跳板隧道（引用方式，按 configId+host:port 缓存并引用计数）
+            int tunnelLocalPort = -1;
             try {
-                terminalPane.connect(config.getHost(), config.getPort(), config.getUsername(), password, keyPaths);
+                tunnelLocalPort = SshTunnelManager.resolve(config);
+            } catch (Exception te) {
+                Platform.runLater(() -> {
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setTitle("连接失败");
+                    alert.setHeaderText(null);
+                    alert.setContentText("建立SSH跳板隧道失败: " + te.getMessage());
+                    alert.showAndWait();
+                    terminalPane.disconnect();
+                });
+                te.printStackTrace();
+                return;
+            }
+            try {
+                String host = config.getHost();
+                int port = config.getPort();
+                if (tunnelLocalPort != -1) {
+                    host = "localhost";
+                    port = tunnelLocalPort;
+                }
+                terminalPane.connect(host, port, config.getUsername(), password, keyPaths);
             } catch (Exception e) {
+                if (tunnelLocalPort != -1) {
+                    SshTunnelManager.release(config);
+                }
                 Platform.runLater(() -> {
                     Alert alert = new Alert(Alert.AlertType.ERROR);
                     alert.setTitle("连接失败");

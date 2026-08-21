@@ -103,10 +103,38 @@ public class RdpPatch extends Rdp {
         }
 
         while (s.getPosition() < s.getEnd()) {
-            type = s.get8();
+            // 修复：正确解析 updateHeader 位域 (MS-RDPBCGR 2.2.9.1.2.1)
+            // updateHeader (1 byte):
+            //   updateCode (4 bits, bits 7-4 高4位) - 更新类型
+            //   fragmentation (2 bits, bits 3-2) - 分片标志
+            //   compression (2 bits, bits 1-0 低2位) - 压缩标志
+            //
+            // 原始 javardp 库直接 switch(整个字节)，导致 updateCode=1 (bitmap) 时
+            // 字节值=0x10 不匹配 case 1，fast-path bitmap 全部丢失 → 黑屏
+            int updateHeader = s.get8();
+            int updateCode = (updateHeader >> 4) & 0x0F;
+            int fragmentation = (updateHeader >> 2) & 0x03;
+            int compression = updateHeader & 0x03;
+
+            // compression != 0 时，updateHeader 后存在 1 字节 compressionFlags
+            // 原始代码未处理此字段，会导致 length/next 解析错位
+            int compressionFlags = 0;
+            if (compression != 0) {
+                compressionFlags = s.get8();
+            }
+
             length = s.getLittleEndian16();
             next = s.getPosition() + length;
-            logger.info(String.format("[RDP5 #%d] sub-type=%d, length=%d", pktNum, type, length));
+            type = updateCode; // 用 updateCode 作为 switch 类型
+
+            logger.info(String.format("[RDP5 #%d] updateHeader=0x%02x, updateCode=%d, frag=%d, comp=%d(compFlags=0x%02x), length=%d",
+                    pktNum, updateHeader, updateCode, fragmentation, compression, compressionFlags, length));
+
+            // 诊断：分片 bitmap update 警告（单片处理可能解析失败）
+            if (type == 1 && fragmentation != 0) {
+                logger.warning(String.format("[RDP5 #%d] bitmap update 分片未合并: frag=%d (0=SINGLE,1=LAST,2=FIRST,3=NEXT)", pktNum, fragmentation));
+            }
+
             switch (type) {
             case 0: // orders
                 count = s.getLittleEndian16();
@@ -126,7 +154,8 @@ public class RdpPatch extends Rdp {
             case 9: process_colour_pointer_pdu(s); break;
             case 10: process_cached_pointer_pdu(s); break;
             default:
-                logger.warning("Unimplemented RDP5 opcode " + type);
+                logger.warning("Unimplemented RDP5 updateCode " + type
+                        + " (updateHeader=0x" + String.format("%02x", updateHeader) + ")");
             }
             s.setPosition(next);
         }

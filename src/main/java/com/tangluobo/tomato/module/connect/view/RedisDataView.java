@@ -2,6 +2,7 @@ package com.tangluobo.tomato.module.connect.view;
 
 import com.tangluobo.tomato.module.connect.ConnectionConfig;
 import com.tangluobo.tomato.module.connect.service.RedisService;
+import com.tangluobo.tomato.utils.DialogPositionUtil;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -305,6 +306,7 @@ public class RedisDataView extends BorderPane {
                     alert.setTitle("加载失败");
                     alert.setHeaderText(null);
                     alert.setContentText("无法加载Key列表: " + e.getMessage());
+                    DialogPositionUtil.centerOnOwner(alert, this);
                     alert.showAndWait();
                 });
             }
@@ -396,6 +398,7 @@ public class RedisDataView extends BorderPane {
                     alert.setTitle("加载失败");
                     alert.setHeaderText(null);
                     alert.setContentText("无法加载Key值: " + e.getMessage());
+                    DialogPositionUtil.centerOnOwner(alert, this);
                     alert.showAndWait();
                 });
             }
@@ -745,6 +748,7 @@ public class RedisDataView extends BorderPane {
                     alert.setTitle("保存失败");
                     alert.setHeaderText(null);
                     alert.setContentText("保存失败: " + e.getMessage());
+                    DialogPositionUtil.centerOnOwner(alert, this);
                     alert.showAndWait();
                 });
             }
@@ -895,6 +899,8 @@ public class RedisDataView extends BorderPane {
         } else if (keysToDelete.size() > 10) {
             confirm.setContentText("将删除 " + keysToDelete.size() + " 个Key");
         }
+
+        DialogPositionUtil.centerOnOwner(confirm, this);
         confirm.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
                 new Thread(() -> {

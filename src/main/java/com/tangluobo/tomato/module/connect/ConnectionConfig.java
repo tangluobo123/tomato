@@ -3,11 +3,15 @@ package com.tangluobo.tomato.module.connect;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.tangluobo.tomato.module.tools.server.ServerConfig;
+
 public class ConnectionConfig {
     private String id;
     private String name;
     private String parentId;
     private ConnectType type;
+    // 工具类型代码（仅当 type == ConnectType.TOOL 时使用），对应 ToolType.code
+    private String toolType;
     private String host;
     private int port;
     private String username;
@@ -20,6 +24,9 @@ public class ConnectionConfig {
     private String description;
     private Integer scrollbackLines;
 
+    // 服务器配置（HTTP_SERVER/FTP_SERVER/SMB_SERVER 专用，保存共享目录、账号列表等完整配置）
+    private ServerConfig serverConfig;
+
     // RDP专属配置
     private String domain;
     private int screenWidth = 1024;
@@ -30,10 +37,22 @@ public class ConnectionConfig {
     // 本地终端配置
     private String terminalType; // Windows: "cmd" 或 "powershell"; Linux/macOS: "system"
 
+    // 本地目录配置
+    private String localDirectoryPath; // 本地目录路径
+
+    // 目录类型连接的存储后端类型：LOCAL（本地目录）或 S3（S3兼容存储）。
+    // 旧配置无此字段时按 LOCAL 处理。
+    private String directoryType = "LOCAL";
+    // S3 目录后端：bucket 名（用户配置的"目录"）
+    private String bucket;
+    // S3 目录后端：bucket 内子目录前缀（可空，以 / 结尾）
+    private String s3Prefix;
+
     // S3/OSS专属配置
     private String region;
     private boolean pathStyleAccess = false; // S3路径风格访问（MinIO需要）
     private String endpoint; // 自定义端点URL（MinIO等S3兼容服务）
+    private String publicAccessUrl; // S3/OSS 公共访问URL前缀（如 CDN 域名）
 
     // Redis专属配置
     private boolean redisCluster = false; // 是否集群模式
@@ -50,6 +69,8 @@ public class ConnectionConfig {
     private boolean sshTunnelSavePassword = true;
     private boolean sshTunnelUseKey = false;
     private List<String> sshTunnelPrivateKeyPaths = new ArrayList<>();
+    // SSH通道引用的已有SSH主机连接ID（S3等通过引用方式使用，不复制具体连接信息）
+    private String sshTunnelHostId;
 
     public ConnectionConfig() {
     }
@@ -72,6 +93,9 @@ public class ConnectionConfig {
 
     public ConnectType getType() { return type; }
     public void setType(ConnectType type) { this.type = type; }
+
+    public String getToolType() { return toolType; }
+    public void setToolType(String toolType) { this.toolType = toolType; }
 
     public String getHost() { return host; }
     public void setHost(String host) { this.host = host; }
@@ -124,6 +148,22 @@ public class ConnectionConfig {
     public String getTerminalType() { return terminalType; }
     public void setTerminalType(String terminalType) { this.terminalType = terminalType; }
 
+    public String getLocalDirectoryPath() { return localDirectoryPath; }
+    public void setLocalDirectoryPath(String localDirectoryPath) { this.localDirectoryPath = localDirectoryPath; }
+
+    /** 目录类型连接的存储后端类型："LOCAL" 或 "S3"；null 视为 "LOCAL" */
+    public String getDirectoryType() { return directoryType; }
+    public void setDirectoryType(String directoryType) { this.directoryType = directoryType; }
+
+    /** 是否为 S3 目录后端 */
+    public boolean isS3Directory() { return "S3".equalsIgnoreCase(directoryType); }
+
+    public String getBucket() { return bucket; }
+    public void setBucket(String bucket) { this.bucket = bucket; }
+
+    public String getS3Prefix() { return s3Prefix; }
+    public void setS3Prefix(String s3Prefix) { this.s3Prefix = s3Prefix; }
+
     public String getRegion() { return region; }
     public void setRegion(String region) { this.region = region; }
 
@@ -132,6 +172,9 @@ public class ConnectionConfig {
 
     public String getEndpoint() { return endpoint; }
     public void setEndpoint(String endpoint) { this.endpoint = endpoint; }
+
+    public String getPublicAccessUrl() { return publicAccessUrl; }
+    public void setPublicAccessUrl(String publicAccessUrl) { this.publicAccessUrl = publicAccessUrl; }
 
     public boolean isRedisCluster() { return redisCluster; }
     public void setRedisCluster(boolean redisCluster) { this.redisCluster = redisCluster; }
@@ -169,4 +212,10 @@ public class ConnectionConfig {
 
     public List<String> getSshTunnelPrivateKeyPaths() { return sshTunnelPrivateKeyPaths; }
     public void setSshTunnelPrivateKeyPaths(List<String> sshTunnelPrivateKeyPaths) { this.sshTunnelPrivateKeyPaths = sshTunnelPrivateKeyPaths != null ? sshTunnelPrivateKeyPaths : new ArrayList<>(); }
+
+    public String getSshTunnelHostId() { return sshTunnelHostId; }
+    public void setSshTunnelHostId(String sshTunnelHostId) { this.sshTunnelHostId = sshTunnelHostId; }
+
+    public ServerConfig getServerConfig() { return serverConfig; }
+    public void setServerConfig(ServerConfig serverConfig) { this.serverConfig = serverConfig; }
 }

@@ -4,12 +4,12 @@ import com.tangluobo.tomato.module.connect.ConnectModule;
 import com.tangluobo.tomato.module.connect.ConnectType;
 import com.tangluobo.tomato.module.connect.ConnectionConfig;
 import com.tangluobo.tomato.module.connect.S3FileBrowserPane;
+import com.tangluobo.tomato.module.connect.dialog.PasswordPromptDialog;
 import com.tangluobo.tomato.module.connect.dialog.SessionConfigDialog;
+import com.tangluobo.tomato.module.connect.service.S3Service;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.GridPane;
-import javafx.geometry.Insets;
 import javafx.stage.Stage;
 
 /**
@@ -33,25 +33,16 @@ public class S3ConnectHandler implements ConnectHandler {
         }
 
         if (config.getPassword() == null || config.getPassword().isEmpty()) {
-            Dialog<String> pwdDialog = new Dialog<>();
-            pwdDialog.setTitle("输入Secret Key");
-            pwdDialog.setHeaderText(config.getName() + " (" + config.getUsername() + "@" + (config.getEndpoint() != null ? config.getEndpoint() : config.getRegion()) + ")");
-            pwdDialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-            GridPane grid = new GridPane();
-            grid.setHgap(10);
-            grid.setVgap(10);
-            grid.setPadding(new Insets(20, 10, 10, 10));
-            PasswordField pf = new PasswordField();
-            pf.setPrefWidth(250);
-            pf.setPromptText("Secret Key");
-            grid.add(new Label("Secret Key："), 0, 0);
-            grid.add(pf, 1, 0);
-            pwdDialog.getDialogPane().setContent(grid);
-            pwdDialog.setResultConverter(dialogButton -> dialogButton == ButtonType.OK ? pf.getText() : null);
-            final String[] passwordHolder = new String[1];
-            pwdDialog.showAndWait().ifPresentOrElse(pwd -> passwordHolder[0] = pwd, () -> {});
-            if (passwordHolder[0] == null || passwordHolder[0].isEmpty()) return;
-            config.setPassword(passwordHolder[0]);
+            PasswordPromptDialog.Result pwdResult = PasswordPromptDialog.show(
+                    "输入Secret Key",
+                    config.getName() + " (" + config.getUsername() + "@" + (config.getEndpoint() != null ? config.getEndpoint() : config.getRegion()) + ")",
+                    "Secret Key：", "Secret Key", "保存密钥");
+            if (pwdResult == null || pwdResult.getPassword() == null || pwdResult.getPassword().isEmpty()) return;
+            config.setPassword(pwdResult.getPassword());
+            if (pwdResult.isSavePassword()) {
+                config.setSavePassword(true);
+                module.saveConnections();
+            }
         }
 
         S3FileBrowserPane fileBrowserPane = new S3FileBrowserPane(config);
@@ -66,7 +57,7 @@ public class S3ConnectHandler implements ConnectHandler {
                 ImageView tabIconView = new ImageView(tabIcon);
                 tabIconView.setFitWidth(16);
                 tabIconView.setFitHeight(16);
-                tab.setGraphic(tabIconView);
+                tab.setGraphic(ConnectModule.createFixedSizeGraphic(tabIconView));
             }
         } catch (Exception e) {}
 
@@ -83,6 +74,7 @@ public class S3ConnectHandler implements ConnectHandler {
         tab.setContextMenu(tabContextMenu);
 
         tab.setOnClosed(e -> {
+            S3Service.closeSshTunnel(config.getId());
             if (module.getTerminalTabPane().getTabs().isEmpty()) {
                 module.showWelcomeView();
             }

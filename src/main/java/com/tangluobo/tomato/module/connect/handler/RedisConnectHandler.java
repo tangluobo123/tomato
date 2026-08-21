@@ -1,14 +1,13 @@
 package com.tangluobo.tomato.module.connect.handler;
 
 import com.tangluobo.tomato.module.connect.*;
+import com.tangluobo.tomato.module.connect.dialog.PasswordPromptDialog;
 import com.tangluobo.tomato.module.connect.service.RedisService;
 import com.tangluobo.tomato.module.connect.view.RedisDataView;
 import javafx.application.Platform;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.GridPane;
-import javafx.geometry.Insets;
 
 import java.util.List;
 
@@ -38,24 +37,16 @@ public class RedisConnectHandler implements ConnectHandler {
         }
 
         if (config.getPassword() == null) {
-            Dialog<String> pwdDialog = new Dialog<>();
-            pwdDialog.setTitle("输入密码");
-            pwdDialog.setHeaderText(config.getName() + " (" + config.getHost() + ":" + config.getPort() + ")");
-            pwdDialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-            GridPane grid = new GridPane();
-            grid.setHgap(10);
-            grid.setVgap(10);
-            grid.setPadding(new Insets(20, 10, 10, 10));
-            PasswordField pf = new PasswordField();
-            pf.setPrefWidth(250);
-            grid.add(new Label("密码："), 0, 0);
-            grid.add(pf, 1, 0);
-            pwdDialog.getDialogPane().setContent(grid);
-            pwdDialog.setResultConverter(dialogButton -> dialogButton == ButtonType.OK ? pf.getText() : null);
-            final String[] passwordHolder = new String[1];
-            pwdDialog.showAndWait().ifPresentOrElse(pwd -> passwordHolder[0] = pwd, () -> {});
-            if (passwordHolder[0] == null || passwordHolder[0].isEmpty()) return;
-            config.setPassword(passwordHolder[0]);
+            PasswordPromptDialog.Result pwdResult = PasswordPromptDialog.show(
+                    "输入密码",
+                    config.getName() + " (" + config.getHost() + ":" + config.getPort() + ")",
+                    "密码：", null, "保存密码");
+            if (pwdResult == null || pwdResult.getPassword() == null || pwdResult.getPassword().isEmpty()) return;
+            config.setPassword(pwdResult.getPassword());
+            if (pwdResult.isSavePassword()) {
+                config.setSavePassword(true);
+                module.saveConnections();
+            }
         }
 
         ProgressIndicator loadingIndicator = new ProgressIndicator();
@@ -137,7 +128,7 @@ public class RedisConnectHandler implements ConnectHandler {
             ImageView tabIconView = new ImageView(redisIcon);
             tabIconView.setFitWidth(18);
             tabIconView.setFitHeight(18);
-            tab.setGraphic(tabIconView);
+            tab.setGraphic(ConnectModule.createFixedSizeGraphic(tabIconView));
         } catch (Exception ignored) {}
 
         tab.setContent(dataView);

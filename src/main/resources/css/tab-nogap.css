@@ -1,6 +1,31 @@
 /* Remove padding, borders, and spacing from TabPane layout containers only */
 /* Input controls (TextField, Button, etc.) are NOT affected */
 
+/* 去除未选中标签和未占用背景区域的立体效果（覆盖 modena 默认渐变） */
+.tab-pane > .tab-header-area > .tab-header-background {
+    -fx-background-color: #ececea !important;
+    -fx-background-insets: 0 !important;
+    -fx-background-radius: 0 !important;
+}
+
+.tab-pane .tab {
+    -fx-background-color: #e0e0e0;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+    -fx-border-color: transparent #c0c0c0 #c0c0c0 transparent;
+    -fx-border-width: 0 1px 1px 0;
+    -fx-border-radius: 0;
+}
+
+.tab-pane .tab:selected {
+    -fx-background-color: #FCFFFF !important;
+    -fx-background-insets: 0 !important;
+    -fx-background-radius: 0 !important;
+    -fx-border-color: transparent #c0c0c0 #000000 transparent;
+    -fx-border-width: 0 1px 1px 0;
+    -fx-border-radius: 0;
+}
+
 /* TabPane root */
 .tab-pane {
     -fx-padding: 0px !important;

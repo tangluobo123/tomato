@@ -1,6 +1,292 @@
 {
   "reflection": [
     {
+      "type": "com.alibaba.fastjson.parser.deserializer.FastjsonASMDeserializer_10_TopicConfigAndQueueMapping",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.alibaba.fastjson.parser.ParserConfig",
+            "com.alibaba.fastjson.util.JavaBeanInfo"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson.parser.deserializer.FastjsonASMDeserializer_11_SubscriptionGroupWrapper",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.alibaba.fastjson.parser.ParserConfig",
+            "com.alibaba.fastjson.util.JavaBeanInfo"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson.parser.deserializer.FastjsonASMDeserializer_12_SubscriptionGroupWrapper",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.alibaba.fastjson.parser.ParserConfig",
+            "com.alibaba.fastjson.util.JavaBeanInfo"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson.parser.deserializer.FastjsonASMDeserializer_13_DataVersion",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.alibaba.fastjson.parser.ParserConfig",
+            "com.alibaba.fastjson.util.JavaBeanInfo"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson.parser.deserializer.FastjsonASMDeserializer_14_DataVersion",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.alibaba.fastjson.parser.ParserConfig",
+            "com.alibaba.fastjson.util.JavaBeanInfo"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson.parser.deserializer.FastjsonASMDeserializer_15_SubscriptionGroupConfig",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.alibaba.fastjson.parser.ParserConfig",
+            "com.alibaba.fastjson.util.JavaBeanInfo"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson.parser.deserializer.FastjsonASMDeserializer_16_SubscriptionGroupConfig",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.alibaba.fastjson.parser.ParserConfig",
+            "com.alibaba.fastjson.util.JavaBeanInfo"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson.parser.deserializer.FastjsonASMDeserializer_17_GroupRetryPolicy",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.alibaba.fastjson.parser.ParserConfig",
+            "com.alibaba.fastjson.util.JavaBeanInfo"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson.parser.deserializer.FastjsonASMDeserializer_18_GroupRetryPolicy",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.alibaba.fastjson.parser.ParserConfig",
+            "com.alibaba.fastjson.util.JavaBeanInfo"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson.parser.deserializer.FastjsonASMDeserializer_19_ConsumeStats",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.alibaba.fastjson.parser.ParserConfig",
+            "com.alibaba.fastjson.util.JavaBeanInfo"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson.parser.deserializer.FastjsonASMDeserializer_1_RemotingCommand",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.alibaba.fastjson.parser.ParserConfig",
+            "com.alibaba.fastjson.util.JavaBeanInfo"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson.parser.deserializer.FastjsonASMDeserializer_20_OffsetWrapper",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.alibaba.fastjson.parser.ParserConfig",
+            "com.alibaba.fastjson.util.JavaBeanInfo"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson.parser.deserializer.FastjsonASMDeserializer_21_KVTable",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.alibaba.fastjson.parser.ParserConfig",
+            "com.alibaba.fastjson.util.JavaBeanInfo"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson.parser.deserializer.FastjsonASMDeserializer_22_KVTable",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.alibaba.fastjson.parser.ParserConfig",
+            "com.alibaba.fastjson.util.JavaBeanInfo"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson.parser.deserializer.FastjsonASMDeserializer_2_ClusterInfo",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.alibaba.fastjson.parser.ParserConfig",
+            "com.alibaba.fastjson.util.JavaBeanInfo"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson.parser.deserializer.FastjsonASMDeserializer_3_BrokerData",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.alibaba.fastjson.parser.ParserConfig",
+            "com.alibaba.fastjson.util.JavaBeanInfo"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson.parser.deserializer.FastjsonASMDeserializer_4_TopicList",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.alibaba.fastjson.parser.ParserConfig",
+            "com.alibaba.fastjson.util.JavaBeanInfo"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson.parser.deserializer.FastjsonASMDeserializer_5_TopicRouteData",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.alibaba.fastjson.parser.ParserConfig",
+            "com.alibaba.fastjson.util.JavaBeanInfo"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson.parser.deserializer.FastjsonASMDeserializer_6_QueueData",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.alibaba.fastjson.parser.ParserConfig",
+            "com.alibaba.fastjson.util.JavaBeanInfo"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson.parser.deserializer.FastjsonASMDeserializer_7_TopicStatsTable",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.alibaba.fastjson.parser.ParserConfig",
+            "com.alibaba.fastjson.util.JavaBeanInfo"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson.parser.deserializer.FastjsonASMDeserializer_8_MessageQueue",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.alibaba.fastjson.parser.ParserConfig",
+            "com.alibaba.fastjson.util.JavaBeanInfo"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson.parser.deserializer.FastjsonASMDeserializer_9_TopicOffset",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.alibaba.fastjson.parser.ParserConfig",
+            "com.alibaba.fastjson.util.JavaBeanInfo"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson.serializer.ASMSerializer_1_HeartbeatData",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.alibaba.fastjson.serializer.SerializeBeanInfo"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.alibaba.fastjson.serializer.ASMSerializer_2_ProducerData",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.alibaba.fastjson.serializer.SerializeBeanInfo"
+          ]
+        }
+      ]
+    },
+    {
       "type": "com.jcraft.jsch.DH25519",
       "methods": [
         {
@@ -64,7 +350,13 @@
       ]
     },
     {
-      "type": "com.jcraft.jsch.bc.SNTRUP761"
+      "type": "com.jcraft.jsch.bc.SNTRUP761",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "com.jcraft.jsch.jce.AES128CTR",
@@ -160,17 +452,6 @@
       ]
     },
     {
-      "type": "com.mysql.cj.exceptions.CJException",
-      "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "java.lang.String"
-          ]
-        }
-      ]
-    },
-    {
       "type": "com.mysql.cj.jdbc.AbandonedConnectionCleanupThread"
     },
     {
@@ -197,6 +478,15 @@
       ]
     },
     {
+      "type": "com.mysql.cj.util.PerVmServerConfigCacheFactory",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "com.sun.crypto.provider.AESCipher$General",
       "methods": [
         {
@@ -206,7 +496,115 @@
       ]
     },
     {
+      "type": "com.sun.crypto.provider.ARCFOURCipher",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.sun.crypto.provider.ChaCha20Cipher$ChaCha20Poly1305",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.sun.crypto.provider.DESCipher",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.sun.crypto.provider.DESedeCipher",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.sun.crypto.provider.DHParameters",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.sun.crypto.provider.GaloisCounterMode$AESGCM",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "com.sun.crypto.provider.HmacCore$HmacSHA256",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.sun.crypto.provider.PBKDF2Core$HmacSHA1",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.sun.crypto.provider.PBKDF2Core$HmacSHA224",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.sun.crypto.provider.PBKDF2Core$HmacSHA256",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.sun.crypto.provider.PBKDF2Core$HmacSHA384",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.sun.crypto.provider.PBKDF2Core$HmacSHA512",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.sun.crypto.provider.TlsMasterSecretGenerator",
       "methods": [
         {
           "name": "<init>",
@@ -602,7 +1000,7 @@
       "jniAccessible": true,
       "methods": [
         {
-          "name": "dragAreaHitTest",
+          "name": "nonClientHitTest",
           "parameterTypes": [
             "int",
             "int"
@@ -770,6 +1168,48 @@
       ]
     },
     {
+      "type": "com.sun.javafx.iio.common.ImageLoaderImpl",
+      "jniAccessible": true,
+      "methods": [
+        {
+          "name": "emitWarning",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.sun.javafx.iio.jpeg.JPEGImageLoader",
+      "jniAccessible": true,
+      "methods": [
+        {
+          "name": "setInputAttributes",
+          "parameterTypes": [
+            "int",
+            "int",
+            "int",
+            "int",
+            "int",
+            "byte[]"
+          ]
+        },
+        {
+          "name": "setOutputAttributes",
+          "parameterTypes": [
+            "int",
+            "int"
+          ]
+        },
+        {
+          "name": "updateImageProgress",
+          "parameterTypes": [
+            "int"
+          ]
+        }
+      ]
+    },
+    {
       "type": "com.sun.javafx.logging.PrintLogger",
       "methods": [
         {
@@ -918,6 +1358,19 @@
     },
     {
       "type": "com.sun.prism.shader.FillRoundRect_Color_Loader",
+      "methods": [
+        {
+          "name": "loadShader",
+          "parameterTypes": [
+            "com.sun.prism.ps.ShaderFactory",
+            "java.lang.String",
+            "java.io.InputStream"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.sun.prism.shader.FillRoundRect_LinearGradient_PAD_Loader",
       "methods": [
         {
           "name": "loadShader",
@@ -1104,6 +1557,9 @@
           "name": "divider2"
         },
         {
+          "name": "logoView"
+        },
+        {
           "name": "maximizeBtn"
         },
         {
@@ -1138,122 +1594,19 @@
       ]
     },
     {
-      "type": "com.tangluobo.tomato.module.connect.BackupService$Nb3Meta",
-      "fields": [
-        {
-          "name": "catalog"
-        },
-        {
-          "name": "comment"
-        },
-        {
-          "name": "databaseType"
-        },
-        {
-          "name": "encryption"
-        },
-        {
-          "name": "endTime"
-        },
-        {
-          "name": "metaVersion"
-        },
-        {
-          "name": "objects"
-        },
-        {
-          "name": "schema"
-        },
-        {
-          "name": "startTime"
-        }
-      ]
-    },
-    {
-      "type": "com.tangluobo.tomato.module.connect.BackupService$Nb3MetaData",
-      "fields": [
-        {
-          "name": "checksum"
-        },
-        {
-          "name": "filename"
-        }
-      ]
-    },
-    {
-      "type": "com.tangluobo.tomato.module.connect.BackupService$Nb3Object",
-      "fields": [
-        {
-          "name": "metadata"
-        },
-        {
-          "name": "name"
-        },
-        {
-          "name": "rows"
-        },
-        {
-          "name": "type"
-        },
-        {
-          "name": "uuid"
-        }
-      ]
-    },
-    {
-      "type": "com.tangluobo.tomato.module.connect.BackupService$Nb3TableData",
-      "fields": [
-        {
-          "name": "checksum"
-        },
-        {
-          "name": "filename"
-        }
-      ]
-    },
-    {
-      "type": "com.tangluobo.tomato.module.connect.BackupService$Nb3TableData[]"
-    },
-    {
-      "type": "com.tangluobo.tomato.module.connect.BackupService$Nb3TableMeta",
-      "fields": [
-        {
-          "name": "autoIncrement"
-        },
-        {
-          "name": "data"
-        },
-        {
-          "name": "ddl"
-        },
-        {
-          "name": "fields"
-        },
-        {
-          "name": "indexDDL"
-        },
-        {
-          "name": "metaVersion"
-        },
-        {
-          "name": "name"
-        },
-        {
-          "name": "subddl"
-        },
-        {
-          "name": "triggerDDL"
-        },
-        {
-          "name": "type"
-        }
-      ]
-    },
-    {
       "type": "com.tangluobo.tomato.module.connect.ConnectType",
       "fields": [
         {
+          "name": "ALIYUN"
+        },
+        {
+          "name": "ALIYUN_OSS"
+        },
+        {
           "name": "FTP"
+        },
+        {
+          "name": "LOCAL_TERMINAL"
         },
         {
           "name": "MYSQL"
@@ -1268,6 +1621,15 @@
           "name": "RDP"
         },
         {
+          "name": "REDIS"
+        },
+        {
+          "name": "ROCKETMQ"
+        },
+        {
+          "name": "S3"
+        },
+        {
           "name": "SFTP"
         },
         {
@@ -1279,7 +1641,16 @@
       "type": "com.tangluobo.tomato.module.connect.ConnectionConfig",
       "fields": [
         {
+          "name": "colorDepth"
+        },
+        {
           "name": "description"
+        },
+        {
+          "name": "domain"
+        },
+        {
+          "name": "endpoint"
         },
         {
           "name": "host"
@@ -1297,13 +1668,34 @@
           "name": "password"
         },
         {
+          "name": "pathStyleAccess"
+        },
+        {
           "name": "port"
         },
         {
           "name": "privateKeyPaths"
         },
         {
+          "name": "redisCluster"
+        },
+        {
+          "name": "redisClusterNodes"
+        },
+        {
+          "name": "redisDatabase"
+        },
+        {
+          "name": "region"
+        },
+        {
           "name": "savePassword"
+        },
+        {
+          "name": "screenHeight"
+        },
+        {
+          "name": "screenWidth"
         },
         {
           "name": "scrollbackLines"
@@ -1324,6 +1716,9 @@
           "name": "sshTunnelUsePassword"
         },
         {
+          "name": "terminalType"
+        },
+        {
           "name": "type"
         },
         {
@@ -1334,6 +1729,9 @@
         },
         {
           "name": "useSshTunnel"
+        },
+        {
+          "name": "useSsl"
         },
         {
           "name": "username"
@@ -1350,6 +1748,89 @@
       "type": "com.tangluobo.tomato.module.connect.ConnectionConfig[]"
     },
     {
+      "type": "com.tangluobo.tomato.module.connect.GlobalConfig",
+      "fields": [
+        {
+          "name": "scrollbackLines"
+        },
+        {
+          "name": "tableFontName"
+        },
+        {
+          "name": "tableFontSize"
+        }
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.tangluobo.tomato.module.connect.view.RocketmqDataView$MessageItem",
+      "methods": [
+        {
+          "name": "getBornHost",
+          "parameterTypes": []
+        },
+        {
+          "name": "getKeys",
+          "parameterTypes": []
+        },
+        {
+          "name": "getMsgId",
+          "parameterTypes": []
+        },
+        {
+          "name": "getStoreTime",
+          "parameterTypes": []
+        },
+        {
+          "name": "getTags",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.tangluobo.tomato.module.connect.view.RocketmqDataView$TopicItem",
+      "methods": [
+        {
+          "name": "getTopic",
+          "parameterTypes": []
+        },
+        {
+          "name": "getTopicType",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.tangluobo.tomato.module.connect.view.RocketmqDataView$TopicOffsetItem",
+      "methods": [
+        {
+          "name": "getBrokerName",
+          "parameterTypes": []
+        },
+        {
+          "name": "getLastUpdateTimestamp",
+          "parameterTypes": []
+        },
+        {
+          "name": "getMaxOffset",
+          "parameterTypes": []
+        },
+        {
+          "name": "getMinOffset",
+          "parameterTypes": []
+        },
+        {
+          "name": "getQueueId",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "com.tangluobo.tomato.ssh.SFTPFileBrowser$FileItem",
       "methods": [
         {
@@ -1363,7 +1844,126 @@
       ]
     },
     {
+      "type": "io.netty.buffer.AbstractByteBufAllocator"
+    },
+    {
+      "type": "io.netty.buffer.AbstractReferenceCountedByteBuf",
+      "fields": [
+        {
+          "name": "refCnt"
+        }
+      ]
+    },
+    {
+      "type": "io.netty.channel.AbstractChannelHandlerContext"
+    },
+    {
+      "type": "io.netty.channel.ChannelOutboundBuffer"
+    },
+    {
+      "type": "io.netty.channel.DefaultChannelConfig"
+    },
+    {
+      "type": "io.netty.channel.DefaultChannelPipeline"
+    },
+    {
+      "type": "io.netty.channel.DefaultChannelPipeline$HeadContext"
+    },
+    {
+      "type": "io.netty.channel.DefaultChannelPipeline$TailContext"
+    },
+    {
+      "type": "io.netty.channel.socket.nio.NioSocketChannel",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "io.netty.handler.timeout.IdleStateHandler"
+    },
+    {
+      "type": "io.netty.util.DefaultAttributeMap"
+    },
+    {
+      "type": "io.netty.util.DefaultAttributeMap$DefaultAttribute"
+    },
+    {
+      "type": "io.netty.util.HashedWheelTimer"
+    },
+    {
+      "type": "io.netty.util.HashedWheelTimer$HashedWheelTimeout"
+    },
+    {
+      "type": "io.netty.util.Recycler$DefaultHandle"
+    },
+    {
+      "type": "io.netty.util.ReferenceCountUtil"
+    },
+    {
+      "type": "io.netty.util.ResourceLeakDetector$DefaultResourceLeak"
+    },
+    {
+      "type": "io.netty.util.concurrent.DefaultPromise"
+    },
+    {
+      "type": "io.netty.util.concurrent.SingleThreadEventExecutor"
+    },
+    {
+      "type": "io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueColdProducerFields",
+      "fields": [
+        {
+          "name": "producerLimit"
+        }
+      ]
+    },
+    {
+      "type": "io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueConsumerFields",
+      "fields": [
+        {
+          "name": "consumerIndex"
+        }
+      ]
+    },
+    {
+      "type": "io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueProducerFields",
+      "fields": [
+        {
+          "name": "producerIndex"
+        }
+      ]
+    },
+    {
+      "type": "io.netty.util.internal.shaded.org.jctools.queues.unpadded.MpscUnpaddedArrayQueueConsumerIndexField",
+      "fields": [
+        {
+          "name": "consumerIndex"
+        }
+      ]
+    },
+    {
+      "type": "io.netty.util.internal.shaded.org.jctools.queues.unpadded.MpscUnpaddedArrayQueueProducerIndexField",
+      "fields": [
+        {
+          "name": "producerIndex"
+        }
+      ]
+    },
+    {
+      "type": "io.netty.util.internal.shaded.org.jctools.queues.unpadded.MpscUnpaddedArrayQueueProducerLimitField",
+      "fields": [
+        {
+          "name": "producerLimit"
+        }
+      ]
+    },
+    {
       "type": "io.opentelemetry.api.GlobalOpenTelemetry"
+    },
+    {
+      "type": "io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk"
     },
     {
       "type": "java.awt.AlphaComposite",
@@ -1707,6 +2307,35 @@
       ]
     },
     {
+      "type": "java.beans.Transient"
+    },
+    {
+      "type": "java.io.InputStream",
+      "jniAccessible": true,
+      "methods": [
+        {
+          "name": "read",
+          "parameterTypes": [
+            "byte[]",
+            "int",
+            "int"
+          ]
+        },
+        {
+          "name": "skip",
+          "parameterTypes": [
+            "long"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "java.io.Serializable"
+    },
+    {
+      "type": "java.lang.AutoCloseable"
+    },
+    {
       "type": "java.lang.Boolean",
       "jniAccessible": true,
       "fields": [
@@ -1751,6 +2380,9 @@
       ]
     },
     {
+      "type": "java.lang.Comparable"
+    },
+    {
       "type": "java.lang.Iterable",
       "jniAccessible": true,
       "methods": [
@@ -1776,6 +2408,19 @@
       ]
     },
     {
+      "type": "java.lang.ProcessHandle",
+      "methods": [
+        {
+          "name": "current",
+          "parameterTypes": []
+        },
+        {
+          "name": "pid",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "java.lang.Runnable",
       "jniAccessible": true,
       "methods": [
@@ -1786,15 +2431,20 @@
       ]
     },
     {
+      "type": "java.lang.SecurityManager",
+      "methods": [
+        {
+          "name": "checkPermission",
+          "parameterTypes": [
+            "java.security.Permission"
+          ]
+        }
+      ]
+    },
+    {
       "type": "java.lang.String",
       "jniAccessible": true,
       "methods": [
-        {
-          "name": "<init>",
-          "parameterTypes": [
-            "byte[]"
-          ]
-        },
         {
           "name": "toLowerCase",
           "parameterTypes": [
@@ -1823,7 +2473,36 @@
       ]
     },
     {
+      "type": "java.lang.management.ManagementFactory",
+      "methods": [
+        {
+          "name": "getRuntimeMXBean",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "java.lang.management.RuntimeMXBean",
+      "methods": [
+        {
+          "name": "getInputArguments",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "java.lang.reflect.RecordComponent"
+    },
+    {
+      "type": "java.nio.Bits"
+    },
+    {
+      "type": "java.nio.Buffer",
+      "fields": [
+        {
+          "name": "address"
+        }
+      ]
     },
     {
       "type": "java.nio.ByteBuffer",
@@ -1857,10 +2536,57 @@
       ]
     },
     {
+      "type": "java.nio.DirectByteBuffer"
+    },
+    {
+      "type": "java.nio.channels.spi.SelectorProvider"
+    },
+    {
+      "type": "java.nio.file.Path"
+    },
+    {
+      "type": "java.security.AccessController",
+      "methods": [
+        {
+          "name": "doPrivileged",
+          "parameterTypes": [
+            "java.security.PrivilegedExceptionAction"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "java.security.AlgorithmParametersSpi"
+    },
+    {
+      "type": "java.security.KeyStoreSpi"
+    },
+    {
+      "type": "java.security.MessageDigestSpi"
+    },
+    {
+      "type": "java.security.interfaces.DSAPrivateKey"
+    },
+    {
+      "type": "java.security.interfaces.DSAPublicKey"
+    },
+    {
+      "type": "java.security.interfaces.RSAPrivateKey"
+    },
+    {
+      "type": "java.security.interfaces.RSAPublicKey"
+    },
+    {
+      "type": "java.security.spec.DSAParameterSpec"
+    },
+    {
       "type": "java.sql.Date"
     },
     {
       "type": "java.sql.SQLException"
+    },
+    {
+      "type": "java.sql.Time"
     },
     {
       "type": "java.util.ArrayList",
@@ -1901,6 +2627,9 @@
           ]
         }
       ]
+    },
+    {
+      "type": "java.util.Deque"
     },
     {
       "type": "java.util.HashMap",
@@ -2016,7 +2745,31 @@
       "type": "javafx.collections.transformation.SortedList$Element[]"
     },
     {
+      "type": "javafx.css.CssParser"
+    },
+    {
       "type": "javafx.css.Rule"
+    },
+    {
+      "type": "javafx.css.StyleableBooleanProperty"
+    },
+    {
+      "type": "javafx.css.StyleableDoubleProperty"
+    },
+    {
+      "type": "javafx.css.StyleableFloatProperty"
+    },
+    {
+      "type": "javafx.css.StyleableIntegerProperty"
+    },
+    {
+      "type": "javafx.css.StyleableLongProperty"
+    },
+    {
+      "type": "javafx.css.StyleableObjectProperty"
+    },
+    {
+      "type": "javafx.css.StyleableStringProperty"
     },
     {
       "type": "javafx.fxml.FXMLLoader"
@@ -2154,7 +2907,31 @@
       "type": "javafx.scene.image.Image"
     },
     {
-      "type": "javafx.scene.image.ImageView"
+      "type": "javafx.scene.image.ImageView",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "setFitHeight",
+          "parameterTypes": [
+            "double"
+          ]
+        },
+        {
+          "name": "setFitWidth",
+          "parameterTypes": [
+            "double"
+          ]
+        },
+        {
+          "name": "setPreserveRatio",
+          "parameterTypes": [
+            "boolean"
+          ]
+        }
+      ]
     },
     {
       "type": "javafx.scene.layout.HBox",
@@ -2286,7 +3063,13 @@
       ]
     },
     {
+      "type": "javafx.scene.shape.Arc"
+    },
+    {
       "type": "javafx.scene.shape.Circle"
+    },
+    {
+      "type": "javafx.scene.shape.Line"
     },
     {
       "type": "javafx.scene.shape.LineTo"
@@ -2369,7 +3152,1081 @@
       "type": "javafx.stage.Window"
     },
     {
+      "type": "javax.persistence.ManyToMany"
+    },
+    {
+      "type": "javax.persistence.OneToMany"
+    },
+    {
+      "type": "javax.xml.bind.annotation.XmlAccessorType"
+    },
+    {
+      "type": "jdk.internal.misc.Unsafe",
+      "methods": [
+        {
+          "name": "getUnsafe",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "kotlin.Metadata"
+    },
+    {
+      "type": "org.apache.rocketmq.common.TopicConfig"
+    },
+    {
+      "type": "org.apache.rocketmq.common.TopicFilterType"
+    },
+    {
+      "type": "org.apache.rocketmq.common.consumer.ConsumeFromWhere"
+    },
+    {
+      "type": "org.apache.rocketmq.common.message.MessageQueue",
+      "methods": [
+        {
+          "name": "setTopic",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.netty.NettyDecoder"
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.netty.NettyEncoder"
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.netty.NettyRemotingClient$2"
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.netty.NettyRemotingClient$NettyClientHandler"
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.netty.NettyRemotingClient$NettyConnectManageHandler"
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.DataVersion"
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.LanguageCode"
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.RemotingCommand",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "getCode",
+          "parameterTypes": []
+        },
+        {
+          "name": "getExtFields",
+          "parameterTypes": []
+        },
+        {
+          "name": "getFlag",
+          "parameterTypes": []
+        },
+        {
+          "name": "getLanguage",
+          "parameterTypes": []
+        },
+        {
+          "name": "getOpaque",
+          "parameterTypes": []
+        },
+        {
+          "name": "getRemark",
+          "parameterTypes": []
+        },
+        {
+          "name": "getSerializeTypeCurrentRPC",
+          "parameterTypes": []
+        },
+        {
+          "name": "getVersion",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.RemotingSerializable"
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.RemotingSysResponseCode",
+      "fields": [
+        {
+          "name": "REQUEST_CODE_NOT_SUPPORTED"
+        },
+        {
+          "name": "SUCCESS"
+        },
+        {
+          "name": "SYSTEM_BUSY"
+        },
+        {
+          "name": "SYSTEM_ERROR"
+        },
+        {
+          "name": "TRANSACTION_FAILED"
+        }
+      ]
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.RequestCode",
+      "fields": [
+        {
+          "name": "ACK_MESSAGE"
+        },
+        {
+          "name": "ADD_BROKER"
+        },
+        {
+          "name": "ADD_WRITE_PERM_OF_BROKER"
+        },
+        {
+          "name": "ADJUST_CONSUMER_THREAD_POOL"
+        },
+        {
+          "name": "AUTH_CREATE_ACL"
+        },
+        {
+          "name": "AUTH_CREATE_USER"
+        },
+        {
+          "name": "AUTH_DELETE_ACL"
+        },
+        {
+          "name": "AUTH_DELETE_USER"
+        },
+        {
+          "name": "AUTH_GET_ACL"
+        },
+        {
+          "name": "AUTH_GET_USER"
+        },
+        {
+          "name": "AUTH_LIST_ACL"
+        },
+        {
+          "name": "AUTH_LIST_USER"
+        },
+        {
+          "name": "AUTH_UPDATE_ACL"
+        },
+        {
+          "name": "AUTH_UPDATE_USER"
+        },
+        {
+          "name": "BATCH_ACK_MESSAGE"
+        },
+        {
+          "name": "BROKER_HEARTBEAT"
+        },
+        {
+          "name": "CHANGE_MESSAGE_INVISIBLETIME"
+        },
+        {
+          "name": "CHECK_CLIENT_CONFIG"
+        },
+        {
+          "name": "CHECK_ROCKSDB_CQ_WRITE_PROGRESS"
+        },
+        {
+          "name": "CHECK_TRANSACTION_STATE"
+        },
+        {
+          "name": "CLEAN_BROKER_DATA"
+        },
+        {
+          "name": "CLEAN_EXPIRED_CONSUMEQUEUE"
+        },
+        {
+          "name": "CLEAN_UNUSED_TOPIC"
+        },
+        {
+          "name": "CLONE_GROUP_OFFSET"
+        },
+        {
+          "name": "CONSUMER_SEND_MSG_BACK"
+        },
+        {
+          "name": "CONSUME_MESSAGE_DIRECTLY"
+        },
+        {
+          "name": "CONTROLLER_ALTER_SYNC_STATE_SET"
+        },
+        {
+          "name": "CONTROLLER_APPLY_BROKER_ID"
+        },
+        {
+          "name": "CONTROLLER_ELECT_MASTER"
+        },
+        {
+          "name": "CONTROLLER_GET_METADATA_INFO"
+        },
+        {
+          "name": "CONTROLLER_GET_NEXT_BROKER_ID"
+        },
+        {
+          "name": "CONTROLLER_GET_REPLICA_INFO"
+        },
+        {
+          "name": "CONTROLLER_GET_SYNC_STATE_DATA"
+        },
+        {
+          "name": "CONTROLLER_REGISTER_BROKER"
+        },
+        {
+          "name": "DELETE_ACL_CONFIG"
+        },
+        {
+          "name": "DELETE_EXPIRED_COMMITLOG"
+        },
+        {
+          "name": "DELETE_KV_CONFIG"
+        },
+        {
+          "name": "DELETE_SUBSCRIPTIONGROUP"
+        },
+        {
+          "name": "DELETE_TOPIC_IN_BROKER"
+        },
+        {
+          "name": "DELETE_TOPIC_IN_NAMESRV"
+        },
+        {
+          "name": "END_TRANSACTION"
+        },
+        {
+          "name": "EXCHANGE_BROKER_HA_INFO"
+        },
+        {
+          "name": "GET_ALL_CONSUMER_OFFSET"
+        },
+        {
+          "name": "GET_ALL_DELAY_OFFSET"
+        },
+        {
+          "name": "GET_ALL_MESSAGE_REQUEST_MODE"
+        },
+        {
+          "name": "GET_ALL_PRODUCER_INFO"
+        },
+        {
+          "name": "GET_ALL_SUBSCRIPTIONGROUP_CONFIG"
+        },
+        {
+          "name": "GET_ALL_TOPIC_CONFIG"
+        },
+        {
+          "name": "GET_ALL_TOPIC_LIST_FROM_NAMESERVER"
+        },
+        {
+          "name": "GET_BROKER_CLUSTER_ACL_CONFIG"
+        },
+        {
+          "name": "GET_BROKER_CLUSTER_ACL_INFO"
+        },
+        {
+          "name": "GET_BROKER_CLUSTER_INFO"
+        },
+        {
+          "name": "GET_BROKER_CONFIG"
+        },
+        {
+          "name": "GET_BROKER_CONSUME_STATS"
+        },
+        {
+          "name": "GET_BROKER_EPOCH_CACHE"
+        },
+        {
+          "name": "GET_BROKER_HA_STATUS"
+        },
+        {
+          "name": "GET_BROKER_MEMBER_GROUP"
+        },
+        {
+          "name": "GET_BROKER_RUNTIME_INFO"
+        },
+        {
+          "name": "GET_CLIENT_CONFIG"
+        },
+        {
+          "name": "GET_COLD_DATA_FLOW_CTR_INFO"
+        },
+        {
+          "name": "GET_CONSUMER_CONNECTION_LIST"
+        },
+        {
+          "name": "GET_CONSUMER_LIST_BY_GROUP"
+        },
+        {
+          "name": "GET_CONSUMER_RUNNING_INFO"
+        },
+        {
+          "name": "GET_CONSUMER_STATUS_FROM_CLIENT"
+        },
+        {
+          "name": "GET_CONSUME_STATS"
+        },
+        {
+          "name": "GET_CONTROLLER_CONFIG"
+        },
+        {
+          "name": "GET_EARLIEST_MSG_STORETIME"
+        },
+        {
+          "name": "GET_HAS_UNIT_SUB_TOPIC_LIST"
+        },
+        {
+          "name": "GET_HAS_UNIT_SUB_UNUNIT_TOPIC_LIST"
+        },
+        {
+          "name": "GET_KVLIST_BY_NAMESPACE"
+        },
+        {
+          "name": "GET_KV_CONFIG"
+        },
+        {
+          "name": "GET_MAX_OFFSET"
+        },
+        {
+          "name": "GET_MIN_OFFSET"
+        },
+        {
+          "name": "GET_NAMESRV_CONFIG"
+        },
+        {
+          "name": "GET_PRODUCER_CONNECTION_LIST"
+        },
+        {
+          "name": "GET_ROUTEINFO_BY_TOPIC"
+        },
+        {
+          "name": "GET_SUBSCRIPTIONGROUP_CONFIG"
+        },
+        {
+          "name": "GET_SYSTEM_TOPIC_LIST_FROM_BROKER"
+        },
+        {
+          "name": "GET_SYSTEM_TOPIC_LIST_FROM_NS"
+        },
+        {
+          "name": "GET_TIMER_CHECK_POINT"
+        },
+        {
+          "name": "GET_TIMER_METRICS"
+        },
+        {
+          "name": "GET_TOPICS_BY_CLUSTER"
+        },
+        {
+          "name": "GET_TOPIC_CONFIG"
+        },
+        {
+          "name": "GET_TOPIC_CONFIG_LIST"
+        },
+        {
+          "name": "GET_TOPIC_NAME_LIST"
+        },
+        {
+          "name": "GET_TOPIC_STATS_INFO"
+        },
+        {
+          "name": "GET_UNIT_TOPIC_LIST"
+        },
+        {
+          "name": "HEART_BEAT"
+        },
+        {
+          "name": "INVOKE_BROKER_TO_GET_CONSUMER_STATUS"
+        },
+        {
+          "name": "INVOKE_BROKER_TO_RESET_OFFSET"
+        },
+        {
+          "name": "LITE_PULL_MESSAGE"
+        },
+        {
+          "name": "LOCK_BATCH_MQ"
+        },
+        {
+          "name": "NOTIFICATION"
+        },
+        {
+          "name": "NOTIFY_BROKER_ROLE_CHANGED"
+        },
+        {
+          "name": "NOTIFY_CONSUMER_IDS_CHANGED"
+        },
+        {
+          "name": "NOTIFY_MIN_BROKER_ID_CHANGE"
+        },
+        {
+          "name": "PEEK_MESSAGE"
+        },
+        {
+          "name": "POLLING_INFO"
+        },
+        {
+          "name": "POP_MESSAGE"
+        },
+        {
+          "name": "PULL_MESSAGE"
+        },
+        {
+          "name": "PUSH_REPLY_MESSAGE_TO_CLIENT"
+        },
+        {
+          "name": "PUT_KV_CONFIG"
+        },
+        {
+          "name": "QUERY_ASSIGNMENT"
+        },
+        {
+          "name": "QUERY_BROKER_OFFSET"
+        },
+        {
+          "name": "QUERY_CONSUMER_OFFSET"
+        },
+        {
+          "name": "QUERY_CONSUME_QUEUE"
+        },
+        {
+          "name": "QUERY_CONSUME_TIME_SPAN"
+        },
+        {
+          "name": "QUERY_CORRECTION_OFFSET"
+        },
+        {
+          "name": "QUERY_DATA_VERSION"
+        },
+        {
+          "name": "QUERY_MESSAGE"
+        },
+        {
+          "name": "QUERY_SUBSCRIPTION_BY_CONSUMER"
+        },
+        {
+          "name": "QUERY_TOPICS_BY_CONSUMER"
+        },
+        {
+          "name": "QUERY_TOPIC_CONSUME_BY_WHO"
+        },
+        {
+          "name": "REGISTER_BROKER"
+        },
+        {
+          "name": "REGISTER_FILTER_SERVER"
+        },
+        {
+          "name": "REGISTER_MESSAGE_FILTER_CLASS"
+        },
+        {
+          "name": "REGISTER_TOPIC_IN_NAMESRV"
+        },
+        {
+          "name": "REMOVE_BROKER"
+        },
+        {
+          "name": "REMOVE_COLD_DATA_FLOW_CTR_CONFIG"
+        },
+        {
+          "name": "RESET_CONSUMER_CLIENT_OFFSET"
+        },
+        {
+          "name": "RESET_CONSUMER_OFFSET_IN_BROKER"
+        },
+        {
+          "name": "RESET_CONSUMER_OFFSET_IN_CONSUMER"
+        },
+        {
+          "name": "RESET_MASTER_FLUSH_OFFSET"
+        },
+        {
+          "name": "RESUME_CHECK_HALF_MESSAGE"
+        },
+        {
+          "name": "RESUME_CONSUMER"
+        },
+        {
+          "name": "SEARCH_OFFSET_BY_TIMESTAMP"
+        },
+        {
+          "name": "SEND_BATCH_MESSAGE"
+        },
+        {
+          "name": "SEND_MESSAGE"
+        },
+        {
+          "name": "SEND_MESSAGE_V2"
+        },
+        {
+          "name": "SEND_REPLY_MESSAGE"
+        },
+        {
+          "name": "SEND_REPLY_MESSAGE_V2"
+        },
+        {
+          "name": "SET_COMMITLOG_READ_MODE"
+        },
+        {
+          "name": "SET_MESSAGE_REQUEST_MODE"
+        },
+        {
+          "name": "SUSPEND_CONSUMER"
+        },
+        {
+          "name": "TRIGGER_DELETE_FILES"
+        },
+        {
+          "name": "UNLOCK_BATCH_MQ"
+        },
+        {
+          "name": "UNREGISTER_BROKER"
+        },
+        {
+          "name": "UNREGISTER_CLIENT"
+        },
+        {
+          "name": "UPDATE_AND_CREATE_ACL_CONFIG"
+        },
+        {
+          "name": "UPDATE_AND_CREATE_STATIC_TOPIC"
+        },
+        {
+          "name": "UPDATE_AND_CREATE_SUBSCRIPTIONGROUP"
+        },
+        {
+          "name": "UPDATE_AND_CREATE_SUBSCRIPTIONGROUP_LIST"
+        },
+        {
+          "name": "UPDATE_AND_CREATE_TOPIC"
+        },
+        {
+          "name": "UPDATE_AND_CREATE_TOPIC_LIST"
+        },
+        {
+          "name": "UPDATE_AND_GET_GROUP_FORBIDDEN"
+        },
+        {
+          "name": "UPDATE_BROKER_CONFIG"
+        },
+        {
+          "name": "UPDATE_COLD_DATA_FLOW_CTR_CONFIG"
+        },
+        {
+          "name": "UPDATE_CONSUMER_OFFSET"
+        },
+        {
+          "name": "UPDATE_CONTROLLER_CONFIG"
+        },
+        {
+          "name": "UPDATE_GLOBAL_WHITE_ADDRS_CONFIG"
+        },
+        {
+          "name": "UPDATE_NAMESRV_CONFIG"
+        },
+        {
+          "name": "VIEW_BROKER_STATS_DATA"
+        },
+        {
+          "name": "VIEW_MESSAGE_BY_ID"
+        },
+        {
+          "name": "WHO_CONSUME_THE_MESSAGE"
+        },
+        {
+          "name": "WIPE_WRITE_PERM_OF_BROKER"
+        }
+      ]
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.ResponseCode",
+      "fields": [
+        {
+          "name": "BROADCAST_CONSUMPTION"
+        },
+        {
+          "name": "BROKER_DISPATCH_NOT_COMPLETE"
+        },
+        {
+          "name": "BROKER_NOT_EXIST"
+        },
+        {
+          "name": "CONSUMER_NOT_ONLINE"
+        },
+        {
+          "name": "CONSUME_MSG_TIMEOUT"
+        },
+        {
+          "name": "CONTROLLER_ALTER_SYNC_STATE_SET_FAILED"
+        },
+        {
+          "name": "CONTROLLER_BROKER_ID_INVALID"
+        },
+        {
+          "name": "CONTROLLER_BROKER_LIVE_INFO_NOT_EXISTS"
+        },
+        {
+          "name": "CONTROLLER_BROKER_METADATA_NOT_EXIST"
+        },
+        {
+          "name": "CONTROLLER_BROKER_NEED_TO_BE_REGISTERED"
+        },
+        {
+          "name": "CONTROLLER_BROKER_NOT_ALIVE"
+        },
+        {
+          "name": "CONTROLLER_ELECT_MASTER_FAILED"
+        },
+        {
+          "name": "CONTROLLER_FENCED_MASTER_EPOCH"
+        },
+        {
+          "name": "CONTROLLER_FENCED_SYNC_STATE_SET_EPOCH"
+        },
+        {
+          "name": "CONTROLLER_INVALID_CLEAN_BROKER_METADATA"
+        },
+        {
+          "name": "CONTROLLER_INVALID_MASTER"
+        },
+        {
+          "name": "CONTROLLER_INVALID_REPLICAS"
+        },
+        {
+          "name": "CONTROLLER_INVALID_REQUEST"
+        },
+        {
+          "name": "CONTROLLER_JRAFT_INTERNAL_ERROR"
+        },
+        {
+          "name": "CONTROLLER_MASTER_NOT_AVAILABLE"
+        },
+        {
+          "name": "CONTROLLER_MASTER_STILL_EXIST"
+        },
+        {
+          "name": "CONTROLLER_NOT_LEADER"
+        },
+        {
+          "name": "DELETE_ACL_CONFIG_FAILED"
+        },
+        {
+          "name": "FILTER_DATA_NOT_EXIST"
+        },
+        {
+          "name": "FILTER_DATA_NOT_LATEST"
+        },
+        {
+          "name": "FLOW_CONTROL"
+        },
+        {
+          "name": "FLUSH_DISK_TIMEOUT"
+        },
+        {
+          "name": "FLUSH_SLAVE_TIMEOUT"
+        },
+        {
+          "name": "GO_AWAY"
+        },
+        {
+          "name": "ILLEGAL_OPERATION"
+        },
+        {
+          "name": "MESSAGE_ILLEGAL"
+        },
+        {
+          "name": "NOT_IN_CURRENT_UNIT"
+        },
+        {
+          "name": "NOT_LEADER_FOR_QUEUE"
+        },
+        {
+          "name": "NO_BUYER_ID"
+        },
+        {
+          "name": "NO_MESSAGE"
+        },
+        {
+          "name": "NO_PERMISSION"
+        },
+        {
+          "name": "POLICY_NOT_EXIST"
+        },
+        {
+          "name": "POLLING_FULL"
+        },
+        {
+          "name": "POLLING_TIMEOUT"
+        },
+        {
+          "name": "PULL_NOT_FOUND"
+        },
+        {
+          "name": "PULL_OFFSET_MOVED"
+        },
+        {
+          "name": "PULL_RETRY_IMMEDIATELY"
+        },
+        {
+          "name": "QUERY_NOT_FOUND"
+        },
+        {
+          "name": "RPC_ADDR_IS_NULL"
+        },
+        {
+          "name": "RPC_SEND_TO_CHANNEL_FAILED"
+        },
+        {
+          "name": "RPC_TIME_OUT"
+        },
+        {
+          "name": "RPC_UNKNOWN"
+        },
+        {
+          "name": "SERVICE_NOT_AVAILABLE"
+        },
+        {
+          "name": "SLAVE_NOT_AVAILABLE"
+        },
+        {
+          "name": "SUBSCRIPTION_GROUP_NOT_EXIST"
+        },
+        {
+          "name": "SUBSCRIPTION_NOT_EXIST"
+        },
+        {
+          "name": "SUBSCRIPTION_NOT_LATEST"
+        },
+        {
+          "name": "SUBSCRIPTION_PARSE_FAILED"
+        },
+        {
+          "name": "TOPIC_EXIST_ALREADY"
+        },
+        {
+          "name": "TOPIC_NOT_EXIST"
+        },
+        {
+          "name": "TRANSACTION_SHOULD_COMMIT"
+        },
+        {
+          "name": "TRANSACTION_SHOULD_ROLLBACK"
+        },
+        {
+          "name": "TRANSACTION_STATE_GROUP_WRONG"
+        },
+        {
+          "name": "TRANSACTION_STATE_UNKNOW"
+        },
+        {
+          "name": "UPDATE_AND_CREATE_ACL_CONFIG_FAILED"
+        },
+        {
+          "name": "UPDATE_GLOBAL_WHITE_ADDRS_CONFIG_FAILED"
+        },
+        {
+          "name": "USER_NOT_EXIST"
+        },
+        {
+          "name": "VERSION_NOT_SUPPORTED"
+        }
+      ]
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.SerializeType"
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.admin.ConsumeStats"
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.admin.OffsetWrapper"
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.admin.TopicOffset"
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.admin.TopicStatsTable"
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.body.ClusterInfo"
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.body.KVTable"
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.body.SubscriptionGroupWrapper",
+      "methods": [
+        {
+          "name": "setSubscriptionGroupTable",
+          "parameterTypes": [
+            "java.util.concurrent.ConcurrentMap"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.body.TopicList"
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.header.GetConsumeStatsRequestHeader",
+      "fields": [
+        {
+          "name": "consumerGroup"
+        },
+        {
+          "name": "topic"
+        }
+      ]
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.header.GetConsumerConnectionListRequestHeader",
+      "fields": [
+        {
+          "name": "consumerGroup"
+        }
+      ]
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.header.GetTopicConfigRequestHeader",
+      "fields": [
+        {
+          "name": "topic"
+        }
+      ]
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.header.GetTopicStatsInfoRequestHeader",
+      "fields": [
+        {
+          "name": "topic"
+        }
+      ]
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.header.HeartbeatRequestHeader"
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.header.NotifyConsumerIdsChangedRequestHeader",
+      "fields": [
+        {
+          "name": "consumerGroup"
+        }
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.header.PullMessageRequestHeader",
+      "fields": [
+        {
+          "name": "commitOffset"
+        },
+        {
+          "name": "consumerGroup"
+        },
+        {
+          "name": "expressionType"
+        },
+        {
+          "name": "maxMsgBytes"
+        },
+        {
+          "name": "maxMsgNums"
+        },
+        {
+          "name": "proxyFrowardClientId"
+        },
+        {
+          "name": "queueId"
+        },
+        {
+          "name": "queueOffset"
+        },
+        {
+          "name": "requestSource"
+        },
+        {
+          "name": "subVersion"
+        },
+        {
+          "name": "subscription"
+        },
+        {
+          "name": "suspendTimeoutMillis"
+        },
+        {
+          "name": "sysFlag"
+        },
+        {
+          "name": "topic"
+        }
+      ]
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.header.PullMessageResponseHeader",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.header.QueryMessageRequestHeader",
+      "fields": [
+        {
+          "name": "beginTimestamp"
+        },
+        {
+          "name": "endTimestamp"
+        },
+        {
+          "name": "key"
+        },
+        {
+          "name": "maxNum"
+        },
+        {
+          "name": "topic"
+        }
+      ]
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.header.UnregisterClientRequestHeader",
+      "fields": [
+        {
+          "name": "clientID"
+        },
+        {
+          "name": "consumerGroup"
+        },
+        {
+          "name": "producerGroup"
+        }
+      ]
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.header.namesrv.GetRouteInfoRequestHeader",
+      "fields": [
+        {
+          "name": "acceptStandardJsonOnly"
+        },
+        {
+          "name": "topic"
+        }
+      ]
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.heartbeat.ConsumeType"
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.heartbeat.ConsumerData",
+      "methods": [
+        {
+          "name": "getConsumeFromWhere",
+          "parameterTypes": []
+        },
+        {
+          "name": "getConsumeType",
+          "parameterTypes": []
+        },
+        {
+          "name": "getGroupName",
+          "parameterTypes": []
+        },
+        {
+          "name": "getMessageModel",
+          "parameterTypes": []
+        },
+        {
+          "name": "getSubscriptionDataSet",
+          "parameterTypes": []
+        },
+        {
+          "name": "isUnitMode",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.heartbeat.HeartbeatData"
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.heartbeat.MessageModel"
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.heartbeat.ProducerData"
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.route.BrokerData"
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.route.QueueData"
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.route.TopicRouteData"
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.statictopic.TopicConfigAndQueueMapping"
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.subscription.GroupRetryPolicy"
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.subscription.GroupRetryPolicyType"
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.protocol.subscription.SubscriptionGroupConfig"
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.rpc.RpcRequestHeader",
+      "fields": [
+        {
+          "name": "bname"
+        },
+        {
+          "name": "ns"
+        },
+        {
+          "name": "nsd"
+        },
+        {
+          "name": "oway"
+        }
+      ]
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.rpc.TopicQueueRequestHeader"
+    },
+    {
+      "type": "org.apache.rocketmq.remoting.rpc.TopicRequestHeader",
+      "fields": [
+        {
+          "name": "lo"
+        }
+      ]
+    },
+    {
       "type": "org.postgresql.Driver"
+    },
+    {
+      "type": "org.postgresql.core.QueryExecutorCloseAction"
+    },
+    {
+      "type": "org.postgresql.jdbc.PgStatement"
     },
     {
       "type": "sun.awt.SunHints",
@@ -3110,6 +4967,120 @@
       ]
     },
     {
+      "type": "sun.management.VMManagementImpl",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "compTimeMonitoringSupport"
+        },
+        {
+          "name": "currentThreadCpuTimeSupport"
+        },
+        {
+          "name": "objectMonitorUsageSupport"
+        },
+        {
+          "name": "otherThreadCpuTimeSupport"
+        },
+        {
+          "name": "remoteDiagnosticCommandsSupport"
+        },
+        {
+          "name": "synchronizerUsageSupport"
+        },
+        {
+          "name": "threadAllocatedMemorySupport"
+        },
+        {
+          "name": "threadContentionMonitoringSupport"
+        }
+      ]
+    },
+    {
+      "type": "sun.misc.Unsafe",
+      "fields": [
+        {
+          "name": "theUnsafe"
+        }
+      ],
+      "methods": [
+        {
+          "name": "invokeCleaner",
+          "parameterTypes": [
+            "java.nio.ByteBuffer"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.misc.VM"
+    },
+    {
+      "type": "sun.nio.ch.SelectorImpl",
+      "fields": [
+        {
+          "name": "publicSelectedKeys"
+        },
+        {
+          "name": "selectedKeys"
+        }
+      ]
+    },
+    {
+      "type": "sun.security.pkcs12.PKCS12KeyStore",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.pkcs12.PKCS12KeyStore$DualFormatPKCS12",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.provider.DSA$SHA224withDSA",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.provider.DSA$SHA256withDSA",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.provider.DSAKeyFactory",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.provider.DSAParameters",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "sun.security.provider.MD5",
       "methods": [
         {
@@ -3139,7 +5110,25 @@
       ]
     },
     {
+      "type": "sun.security.provider.SHA2$SHA224",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "sun.security.provider.SHA2$SHA256",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.provider.SHA5$SHA384",
       "methods": [
         {
           "name": "<init>",
@@ -3157,6 +5146,207 @@
       ]
     },
     {
+      "type": "sun.security.provider.X509Factory",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.rsa.PSSParameters",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.rsa.RSAKeyFactory$Legacy",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.rsa.RSAPSSSignature",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.rsa.RSASignature$SHA224withRSA",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.rsa.RSASignature$SHA256withRSA",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.ssl.KeyManagerFactoryImpl$SunX509",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.ssl.SSLContextImpl$DefaultSSLContext",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.ssl.TrustManagerFactoryImpl$PKIXFactory",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.x509.AuthorityInfoAccessExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Boolean",
+            "java.lang.Object"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.security.x509.AuthorityKeyIdentifierExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Boolean",
+            "java.lang.Object"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.security.x509.BasicConstraintsExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Boolean",
+            "java.lang.Object"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.security.x509.CRLDistributionPointsExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Boolean",
+            "java.lang.Object"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.security.x509.CertificatePoliciesExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Boolean",
+            "java.lang.Object"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.security.x509.ExtendedKeyUsageExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Boolean",
+            "java.lang.Object"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.security.x509.KeyUsageExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Boolean",
+            "java.lang.Object"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.security.x509.NetscapeCertTypeExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Boolean",
+            "java.lang.Object"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.security.x509.PrivateKeyUsageExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Boolean",
+            "java.lang.Object"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.security.x509.SubjectKeyIdentifierExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Boolean",
+            "java.lang.Object"
+          ]
+        }
+      ]
+    },
+    {
       "type": "sun.text.resources.BreakIteratorInfo"
     },
     {
@@ -3167,6 +5357,15 @@
     },
     {
       "type": "sun.util.resources.cldr.CalendarData"
+    },
+    {
+      "type": "sun.util.resources.cldr.TimeZoneNames"
+    },
+    {
+      "type": "sun.util.resources.cldr.TimeZoneNames_en"
+    },
+    {
+      "type": "sun.util.resources.cldr.TimeZoneNames_en_US"
     }
   ],
   "resources": [
@@ -3177,7 +5376,22 @@
       "glob": "META-INF/fonts.mf"
     },
     {
+      "glob": "META-INF/services/com.alibaba.fastjson.parser.deserializer.AutowiredObjectDeserializer"
+    },
+    {
+      "glob": "META-INF/services/com.alibaba.fastjson.serializer.AutowiredObjectSerializer"
+    },
+    {
+      "glob": "META-INF/services/io.opentelemetry.context.ContextStorageProvider"
+    },
+    {
+      "glob": "META-INF/services/java.net.spi.InetAddressResolverProvider"
+    },
+    {
       "glob": "META-INF/services/java.net.spi.URLStreamHandlerProvider"
+    },
+    {
+      "glob": "META-INF/services/java.nio.channels.spi.SelectorProvider"
     },
     {
       "glob": "META-INF/services/java.sql.Driver"
@@ -3190,6 +5404,12 @@
     },
     {
       "glob": "META-INF/services/javax.xml.stream.XMLInputFactory"
+    },
+    {
+      "glob": "META-INF/services/org.apache.rocketmq.common.namesrv.TopAddressing"
+    },
+    {
+      "glob": "META-INF/services/org.apache.rocketmq.logging.org.slf4j.spi.SLF4JServiceProvider"
     },
     {
       "glob": "com/mysql/cj/LocalizedErrorMessages.properties"
@@ -3207,19 +5427,28 @@
       "glob": "com/mysql/cj/LocalizedErrorMessages_zh_Hans_CN.properties"
     },
     {
-      "glob": "com/mysql/cj/TlsSettings.properties"
-    },
-    {
       "glob": "com/sun/glass/utils/NativeLibLoader.class"
     },
     {
-      "glob": "com/sun/javafx/scene/control/skin/modena/dialog-confirm.png"
-    },
-    {
-      "glob": "com/sun/javafx/scene/control/skin/modena/dialog-information.png"
+      "glob": "com/sun/javafx/scene/control/skin/modena/dialog-error.png"
     },
     {
       "glob": "com/sun/javafx/scene/control/skin/modena/modena.bss"
+    },
+    {
+      "glob": "com/sun/javafx/scene/control/skin/resources/controls-nt.properties"
+    },
+    {
+      "glob": "com/sun/javafx/scene/control/skin/resources/controls-nt_zh.properties"
+    },
+    {
+      "glob": "com/sun/javafx/scene/control/skin/resources/controls-nt_zh_CN.properties"
+    },
+    {
+      "glob": "com/sun/javafx/scene/control/skin/resources/controls-nt_zh_Hans.properties"
+    },
+    {
+      "glob": "com/sun/javafx/scene/control/skin/resources/controls-nt_zh_Hans_CN.properties"
     },
     {
       "glob": "com/sun/javafx/scene/control/skin/resources/controls.properties"
@@ -3270,6 +5499,9 @@
       "glob": "com/sun/prism/es2/glsl/FillRoundRect_Color.frag"
     },
     {
+      "glob": "com/sun/prism/es2/glsl/FillRoundRect_LinearGradient_PAD.frag"
+    },
+    {
       "glob": "com/sun/prism/es2/glsl/Mask_TextureSuper.frag"
     },
     {
@@ -3306,16 +5538,25 @@
       "glob": "css/connect-tree.css"
     },
     {
-      "glob": "images/connect/backup.png"
+      "glob": "css/tab-nogap.css"
     },
     {
-      "glob": "images/connect/beautiful.png"
+      "glob": "fastjson.properties"
+    },
+    {
+      "glob": "images/connect/backup.png"
     },
     {
       "glob": "images/connect/code.png"
     },
     {
-      "glob": "images/connect/create_query_tool.png"
+      "glob": "images/connect/col_add.png"
+    },
+    {
+      "glob": "images/connect/col_del.png"
+    },
+    {
+      "glob": "images/connect/col_jump.png"
     },
     {
       "glob": "images/connect/database.png"
@@ -3324,7 +5565,7 @@
       "glob": "images/connect/database_gray.png"
     },
     {
-      "glob": "images/connect/execute.png"
+      "glob": "images/connect/down.png"
     },
     {
       "glob": "images/connect/folder.png"
@@ -3336,6 +5577,12 @@
       "glob": "images/connect/linux.png"
     },
     {
+      "glob": "images/connect/mod.png"
+    },
+    {
+      "glob": "images/connect/mod_open.png"
+    },
+    {
       "glob": "images/connect/monitor.png"
     },
     {
@@ -3345,16 +5592,55 @@
       "glob": "images/connect/mysql_open.png"
     },
     {
+      "glob": "images/connect/postgresql.png"
+    },
+    {
+      "glob": "images/connect/primary_key.png"
+    },
+    {
       "glob": "images/connect/query.png"
+    },
+    {
+      "glob": "images/connect/redis.png"
+    },
+    {
+      "glob": "images/connect/rocketmq.png"
+    },
+    {
+      "glob": "images/connect/s3.png"
     },
     {
       "glob": "images/connect/save.png"
     },
     {
+      "glob": "images/connect/server.png"
+    },
+    {
+      "glob": "images/connect/sftp.png"
+    },
+    {
+      "glob": "images/connect/shell.png"
+    },
+    {
       "glob": "images/connect/table.png"
     },
     {
+      "glob": "images/connect/up.png"
+    },
+    {
+      "glob": "images/connect/user.png"
+    },
+    {
       "glob": "images/connect/view.png"
+    },
+    {
+      "glob": "images/connect/windows.png"
+    },
+    {
+      "glob": "images/copy.png"
+    },
+    {
+      "glob": "images/logo.png"
     },
     {
       "glob": "libglass.so"
@@ -3372,7 +5658,13 @@
       "glob": "libjavafx_font_pango.so"
     },
     {
+      "glob": "libjavafx_iio.so"
+    },
+    {
       "glob": "libprism_es2.so"
+    },
+    {
+      "glob": "org/apache/rocketmq/logging/org/slf4j/impl/StaticLoggerBinder.class"
     },
     {
       "glob": "org/fxmisc/richtext/styled-text-area.bss"
@@ -3381,8 +5673,31 @@
       "glob": "org/fxmisc/richtext/styled-text-area.css"
     },
     {
+      "glob": "org/postgresql/driverconfig.properties"
+    },
+    {
+      "glob": "org/postgresql/translation/messages.properties"
+    },
+    {
+      "glob": "org/postgresql/translation/messages_zh.properties"
+    },
+    {
+      "glob": "org/postgresql/translation/messages_zh_Hans.properties"
+    },
+    {
+      "glob": "org/postgresql/translation/messages_zh_Hans_CN.properties"
+    },
+    {
+      "module": "java.base",
+      "glob": "jdk/internal/icu/impl/data/icudt76b/nfkc.nrm"
+    },
+    {
       "module": "java.base",
       "glob": "jdk/internal/icu/impl/data/icudt76b/ubidi.icu"
+    },
+    {
+      "module": "java.base",
+      "glob": "jdk/internal/icu/impl/data/icudt76b/uprops.icu"
     },
     {
       "module": "java.base",
@@ -3428,6 +5743,12 @@
     },
     {
       "bundle": "com/sun/javafx/scene/control/skin/resources/controls"
+    },
+    {
+      "bundle": "com/sun/javafx/scene/control/skin/resources/controls-nt"
+    },
+    {
+      "bundle": "org.postgresql.translation.messages"
     },
     {
       "bundle": "sun.awt.resources.awt"

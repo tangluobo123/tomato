@@ -32,6 +32,7 @@ public class TerminalView extends Canvas {
     private double charHeight = 16;
     private double fontAscent = 12;
     private String fontFamily = "monospace";
+    private double fontSize = 13;
 
     // 颜色缓存（256色）
     private static final Color[] FX_COLORS = new Color[256];
@@ -57,11 +58,20 @@ public class TerminalView extends Canvas {
     private final Timeline cursorBlinkTimer;
 
     // 文本选择
+    // selectionStartRow/selectionEndRow 存储绝对行号（scrollback行0~size-1 + 主缓冲区行size~size+rows-1）
+    // 这样选中内容锚定到实际文本行，滚动时高亮跟随内容移动，复制也能取到正确字符
     private int selectionStartCol = -1;
     private int selectionStartRow = -1;
     private int selectionEndCol = -1;
     private int selectionEndRow = -1;
     private boolean isSelecting = false;
+    // 记录鼠标按下前是否已有选择，用于避免单击时不必要重绘
+    private boolean hadSelectionBeforePress = false;
+
+    // 鼠标拖拽渲染节流（避免每次mouse-dragged都全屏重绘）
+    private long lastDragRenderTime = 0;
+    private static final long DRAG_RENDER_INTERVAL = 16; // ~60fps
+    private boolean dragRenderPending = false;
 
     // 滚动条回调
     public interface ScrollbarHandler {
@@ -77,10 +87,17 @@ public class TerminalView extends Canvas {
         void onResize(int cols, int rows, int width, int height);
     }
 
+    // 粘贴回调
     public interface PasteHandler {
         void onPaste();
     }
     private PasteHandler pasteHandler;
+
+    // 自动滚动回调（用户输入时触发，滚动到底部）
+    public interface AutoScrollHandler {
+        void onAutoScroll();
+    }
+    private AutoScrollHandler autoScrollHandler;
 
     public TerminalView(TerminalEmulator emulator) {
         this.emulator = emulator;
@@ -208,6 +225,19 @@ public class TerminalView extends Canvas {
         this.pasteHandler = handler;
     }
 
+    public void setAutoScrollHandler(AutoScrollHandler handler) {
+        this.autoScrollHandler = handler;
+    }
+
+    /**
+     * 触发自动滚动到底部（当用户有实际输入时调用）
+     */
+    private void fireAutoScroll() {
+        if (autoScrollHandler != null) {
+            autoScrollHandler.onAutoScroll();
+        }
+    }
+
     /**
      * 由外部滚动条驱动滚动
      */
@@ -217,14 +247,35 @@ public class TerminalView extends Canvas {
     }
 
     private void updateFontMetrics() {
-        gc.setFont(javafx.scene.text.Font.font(fontFamily, 13));
+        gc.setFont(javafx.scene.text.Font.font(fontFamily, fontSize));
         gc.save();
         javafx.scene.text.Text text = new javafx.scene.text.Text("M");
-        text.setFont(javafx.scene.text.Font.font(fontFamily, 13));
+        text.setFont(javafx.scene.text.Font.font(fontFamily, fontSize));
         charWidth = text.getLayoutBounds().getWidth();
-        charHeight = 18;
-        fontAscent = 14;
+        charHeight = Math.max(fontSize + 5, 18);
+        fontAscent = fontSize + 1;
         gc.restore();
+    }
+
+    /** 设置终端字体族与字号，会重新计算字符度量并触发重绘 */
+    public void setTerminalFont(String family, double size) {
+        if (family != null && !family.isBlank()) {
+            this.fontFamily = family;
+        }
+        if (size > 0) {
+            this.fontSize = size;
+        }
+        updateFontMetrics();
+        resize((int) (getWidth() / charWidth), (int) (getHeight() / charHeight));
+        render();
+    }
+
+    public String getFontFamily() {
+        return fontFamily;
+    }
+
+    public double getFontSize() {
+        return fontSize;
     }
 
     private void handleKeyPressed(KeyEvent event) {
@@ -241,14 +292,19 @@ public class TerminalView extends Canvas {
             data = "\033".getBytes();
         } else if (event.getCode() == javafx.scene.input.KeyCode.ENTER) {
             data = "\r".getBytes();
+            fireAutoScroll();
         } else if (event.getCode() == javafx.scene.input.KeyCode.BACK_SPACE) {
             data = "\b".getBytes();
         } else if (event.getCode() == javafx.scene.input.KeyCode.TAB) {
             data = "\t".getBytes();
         } else if (event.getCode() == javafx.scene.input.KeyCode.UP) {
             data = emulator.isApplicationCursorKeys() ? "\033OA".getBytes() : "\033[A".getBytes();
+            // 非应用光标键模式（shell模式）下切换历史命令时滚动到底部
+            if (!emulator.isApplicationCursorKeys()) fireAutoScroll();
         } else if (event.getCode() == javafx.scene.input.KeyCode.DOWN) {
             data = emulator.isApplicationCursorKeys() ? "\033OB".getBytes() : "\033[B".getBytes();
+            // 非应用光标键模式（shell模式）下切换历史命令时滚动到底部
+            if (!emulator.isApplicationCursorKeys()) fireAutoScroll();
         } else if (event.getCode() == javafx.scene.input.KeyCode.RIGHT) {
             data = emulator.isApplicationCursorKeys() ? "\033OC".getBytes() : "\033[C".getBytes();
         } else if (event.getCode() == javafx.scene.input.KeyCode.LEFT) {
@@ -283,9 +339,10 @@ public class TerminalView extends Canvas {
             }
             event.consume();
             return;
-        } else if (event.getCode() == javafx.scene.input.KeyCode.C && event.isControlDown()) {
+        } else if (event.getCode() == javafx.scene.input.KeyCode.C && event.isControlDown() && !event.isShiftDown()) {
             data = "\003".getBytes();
-        } else if (event.getCode() == javafx.scene.input.KeyCode.D && event.isControlDown()) {
+            fireAutoScroll();
+        } else if (event.getCode() == javafx.scene.input.KeyCode.D && event.isControlDown() && !event.isShiftDown()) {
             data = "\004".getBytes();
         } else if (event.getCode() == javafx.scene.input.KeyCode.Z && event.isControlDown()) {
             data = "\032".getBytes();
@@ -295,6 +352,32 @@ public class TerminalView extends Canvas {
             data = "\001".getBytes();
         } else if (event.getCode() == javafx.scene.input.KeyCode.E && event.isControlDown()) {
             data = "\005".getBytes();
+        } else if (event.getCode() == javafx.scene.input.KeyCode.B && event.isControlDown()) {
+            data = "\002".getBytes();
+        } else if (event.getCode() == javafx.scene.input.KeyCode.F && event.isControlDown()) {
+            data = "\006".getBytes();
+        } else if (event.getCode() == javafx.scene.input.KeyCode.N && event.isControlDown()) {
+            data = "\016".getBytes();
+        } else if (event.getCode() == javafx.scene.input.KeyCode.P && event.isControlDown()) {
+            data = "\020".getBytes();
+        } else if (event.getCode() == javafx.scene.input.KeyCode.T && event.isControlDown()) {
+            data = "\024".getBytes();
+        } else if (event.getCode() == javafx.scene.input.KeyCode.Y && event.isControlDown()) {
+            data = "\031".getBytes();
+        } else if (event.getCode() == javafx.scene.input.KeyCode.G && event.isControlDown()) {
+            data = "\007".getBytes();
+        } else if (event.getCode() == javafx.scene.input.KeyCode.O && event.isControlDown()) {
+            data = "\017".getBytes();
+        } else if (event.getCode() == javafx.scene.input.KeyCode.V && event.isControlDown() && !event.isShiftDown()) {
+            data = "\026".getBytes();
+        } else if (event.getCode() == javafx.scene.input.KeyCode.X && event.isControlDown()) {
+            data = "\030".getBytes();
+        } else if (event.getCode() == javafx.scene.input.KeyCode.S && event.isControlDown()) {
+            data = "\023".getBytes();
+        } else if (event.getCode() == javafx.scene.input.KeyCode.Q && event.isControlDown()) {
+            data = "\021".getBytes();
+        } else if (event.getCode() == javafx.scene.input.KeyCode.BACK_SLASH && event.isControlDown()) {
+            data = "\034".getBytes();
         } else if (event.getCode() == javafx.scene.input.KeyCode.U && event.isControlDown()) {
             data = "\025".getBytes();
         } else if (event.getCode() == javafx.scene.input.KeyCode.K && event.isControlDown()) {
@@ -334,8 +417,13 @@ public class TerminalView extends Canvas {
         // 用户按键，清除屏幕修改抑制标志
         emulator.onUserInput();
 
-        // 过滤Ctrl+Shift组合键（如Ctrl+Shift+C/V复制粘贴），避免在Linux下将大写字母作为普通输入发送
-        if (event.isControlDown() && event.isShiftDown()) {
+        // 过滤所有Ctrl组合键：
+        // 1. Ctrl+Shift组合键（如Ctrl+Shift+C/V复制粘贴）
+        // 2. 纯Ctrl组合键（如Ctrl+A/E/C）
+        // 在Linux/GTK上，handleKeyPressed中event.consume()不能完全阻止handleKeyTyped被触发，
+        // 若不过滤，Ctrl+A会产生额外的"A"字符发送给shell，导致光标位置错乱
+        // （shell先收到0x01移动光标，再收到"A"插入字符）
+        if (event.isControlDown()) {
             event.consume();
             return;
         }
@@ -345,6 +433,7 @@ public class TerminalView extends Canvas {
             char c = ch.charAt(0);
             if (c >= 0x20 && c != 0x7F) {
                 keyInputHandler.handleInput(ch.getBytes());
+                fireAutoScroll();
                 event.consume();
             }
         }
@@ -369,6 +458,7 @@ public class TerminalView extends Canvas {
         String committed = event.getCommitted();
         if (committed != null && !committed.isEmpty()) {
             keyInputHandler.handleInput(committed.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            fireAutoScroll();
             event.consume();
         }
     }
@@ -388,7 +478,10 @@ public class TerminalView extends Canvas {
         gc.setFill(defaultBg);
         gc.fillRect(0, 0, getWidth(), getHeight());
 
-        gc.setFont(javafx.scene.text.Font.font(fontFamily, 13));
+        gc.setFont(javafx.scene.text.Font.font(fontFamily, fontSize));
+
+        // 复用StringBuilder，避免每个run都创建对象
+        StringBuilder segBuf = new StringBuilder(256);
 
         for (int y = 0; y < rows; y++) {
             double py = y0 + y * charHeight;
@@ -434,7 +527,7 @@ public class TerminalView extends Canvas {
                         Color fg;
                         if (lineChars != null) {
                             int bgIdx = emulator.getBg(firstAttr);
-                            bg = (bgIdx >= 0 && bgIdx < FX_COLORS.length) ? FX_COLORS[bgIdx] : defaultBg;
+                            bg = (bgIdx <= 0 || bgIdx >= FX_COLORS.length) ? defaultBg : FX_COLORS[bgIdx];
                             int fgIdx = emulator.getFg(firstAttr);
                             fg = (fgIdx >= 0 && fgIdx < FX_COLORS.length) ? FX_COLORS[fgIdx] : defaultFg;
                             if (emulator.isReverse(firstAttr)) {
@@ -448,6 +541,9 @@ public class TerminalView extends Canvas {
                         gc.fillRect(x0 + runStart * charWidth, py, (x - runStart) * charWidth, charHeight);
 
                         gc.setFill(fg);
+                        // 批量绘制：将连续字符拼接为字符串一次绘制，宽字符占位符处分段
+                        int segStart = runStart;
+                        segBuf.setLength(0);
                         for (int i = runStart; i < x; i++) {
                             char c;
                             if (lineChars != null) {
@@ -455,8 +551,22 @@ public class TerminalView extends Canvas {
                             } else {
                                 c = emulator.getChar(i, bufY);
                             }
-                            if (c == '\0') continue;
-                            gc.fillText(String.valueOf(c), x0 + i * charWidth, py + fontAscent);
+                            if (c == '\0') {
+                                // 宽字符占位符：先输出已累积的字符串
+                                if (segBuf.length() > 0) {
+                                    gc.fillText(segBuf.toString(), x0 + segStart * charWidth, py + fontAscent);
+                                    segBuf.setLength(0);
+                                }
+                                segStart = i + 1;
+                                continue;
+                            }
+                            if (segBuf.length() == 0) {
+                                segStart = i;
+                            }
+                            segBuf.append(c);
+                        }
+                        if (segBuf.length() > 0) {
+                            gc.fillText(segBuf.toString(), x0 + segStart * charWidth, py + fontAscent);
                         }
                     }
                     runStart = x;
@@ -511,11 +621,25 @@ public class TerminalView extends Canvas {
             }
 
             gc.setFill(Color.rgb(0x42, 0x85, 0xF4, 0.5)); // 蓝色半透明
-            for (int row = startRow; row <= endRow; row++) {
-                int lineStart = (row == startRow) ? startCol : 0;
-                int lineEnd = (row == endRow) ? endCol : cols - 1;
+            // startRow/endRow 为绝对行号，需转为屏幕行号渲染；只绘制可见范围内的行
+            for (int absRow = startRow; absRow <= endRow; absRow++) {
+                int screenRow = absoluteRowToScreen(absRow);
+                if (screenRow < 0) continue; // 不在可见范围，跳过
+                int lineStart = (absRow == startRow) ? startCol : 0;
+                int lineEnd = (absRow == endRow) ? endCol : cols - 1;
+                // 限制高亮范围不超过行的实际内容末尾，不延伸到行尾填充空格
+                int contentEnd = -1;
+                for (int c = cols - 1; c >= 0; c--) {
+                    char ch = getCharAtAbsolute(c, absRow);
+                    if (ch != ' ' && ch != '\0') {
+                        contentEnd = c;
+                        break;
+                    }
+                }
+                if (contentEnd < lineStart) continue; // 选择范围内无实际内容
+                if (lineEnd > contentEnd) lineEnd = contentEnd;
                 double sx = x0 + lineStart * charWidth;
-                double sy = y0 + row * charHeight;
+                double sy = y0 + screenRow * charHeight;
                 double sw = (lineEnd - lineStart + 1) * charWidth;
                 gc.fillRect(sx, sy, sw, charHeight);
             }
@@ -553,7 +677,7 @@ public class TerminalView extends Canvas {
             }
         }
         int bgIdx = emulator.getBg(attr);
-        if (bgIdx < 0 || bgIdx >= FX_COLORS.length) return defaultBg;
+        if (bgIdx < 0 || bgIdx >= FX_COLORS.length || bgIdx == 0) return defaultBg;
         return FX_COLORS[bgIdx];
     }
 
@@ -624,37 +748,115 @@ public class TerminalView extends Canvas {
         return Math.max(0, Math.min(row, emulator.getRows() - 1));
     }
 
+    /**
+     * 屏幕行号转绝对行号
+     * 绝对行号：0~scrollbackSize-1 为scrollback历史行，scrollbackSize~scrollbackSize+rows-1 为当前主缓冲区行
+     */
+    private int screenRowToAbsolute(int screenRow) {
+        int scrollbackSize = emulator.isUsingAltBuffer() ? 0 : emulator.getScrollbackSize();
+        int scrollOffset = emulator.getScrollOffset();
+        return (scrollbackSize - scrollOffset) + screenRow;
+    }
+
+    /**
+     * 绝对行号转屏幕行号，不在可见范围内返回-1
+     */
+    private int absoluteRowToScreen(int absoluteRow) {
+        int scrollbackSize = emulator.isUsingAltBuffer() ? 0 : emulator.getScrollbackSize();
+        int scrollOffset = emulator.getScrollOffset();
+        int screenRow = absoluteRow - (scrollbackSize - scrollOffset);
+        if (screenRow < 0 || screenRow >= emulator.getRows()) return -1;
+        return screenRow;
+    }
+
+    /**
+     * 按绝对行号取字符（自动区分scrollback和主缓冲区）
+     */
+    private char getCharAtAbsolute(int col, int absoluteRow) {
+        int scrollbackSize = emulator.isUsingAltBuffer() ? 0 : emulator.getScrollbackSize();
+        if (absoluteRow < scrollbackSize) {
+            char[] line = emulator.getScrollbackLine(absoluteRow);
+            if (line == null || col >= line.length) return ' ';
+            return line[col];
+        } else {
+            int bufY = absoluteRow - scrollbackSize;
+            if (bufY < 0 || bufY >= emulator.getRows()) return ' ';
+            return emulator.getChar(col, bufY);
+        }
+    }
+
+    /**
+     * 绝对行号所在的行是否为宽字符主cell的占位符
+     */
+    private boolean isWideCharAtAbsolute(int col, int absoluteRow) {
+        char c = getCharAtAbsolute(col, absoluteRow);
+        return emulator.isWideChar(c);
+    }
+
     private void handleMousePressed(MouseEvent e) {
         requestFocus();
         if (e.getButton() == MouseButton.PRIMARY) {
             // 双击/三击时不在此处重置选择，由handleMouseClicked处理
             if (e.getClickCount() > 1) return;
             isSelecting = true;
+            // 记录按下前是否有选择，用于决定是否需要重绘清除旧高亮
+            hadSelectionBeforePress = hasSelection();
             selectionStartCol = mouseToCol(e.getX());
-            selectionStartRow = mouseToRow(e.getY());
+            selectionStartRow = screenRowToAbsolute(mouseToRow(e.getY()));
             selectionEndCol = selectionStartCol;
             selectionEndRow = selectionStartRow;
-            render();
+            // 仅当之前有选择高亮时才需要重绘清除；无选择时单击不触发渲染
+            if (hadSelectionBeforePress) render();
         }
     }
 
     private void handleMouseDragged(MouseEvent e) {
         if (isSelecting && e.getButton() == MouseButton.PRIMARY) {
             selectionEndCol = mouseToCol(e.getX());
-            selectionEndRow = mouseToRow(e.getY());
+            selectionEndRow = screenRowToAbsolute(mouseToRow(e.getY()));
+            // 节流渲染：限制重绘频率为~60fps，避免鼠标高频移动导致卡顿
+            scheduleDragRender();
+        }
+    }
+
+    /**
+     * 鼠标拖拽时节流渲染：合并高频mouse-dragged事件的渲染请求
+     */
+    private void scheduleDragRender() {
+        long now = System.currentTimeMillis();
+        if (now - lastDragRenderTime >= DRAG_RENDER_INTERVAL) {
+            lastDragRenderTime = now;
             render();
+            dragRenderPending = false;
+        } else if (!dragRenderPending) {
+            dragRenderPending = true;
+            javafx.animation.PauseTransition delay = new javafx.animation.PauseTransition(
+                    javafx.util.Duration.millis(DRAG_RENDER_INTERVAL - (now - lastDragRenderTime)));
+            delay.setOnFinished(ev -> {
+                lastDragRenderTime = System.currentTimeMillis();
+                render();
+                dragRenderPending = false;
+            });
+            delay.play();
         }
     }
 
     private void handleMouseReleased(MouseEvent e) {
         if (isSelecting && e.getButton() == MouseButton.PRIMARY) {
             selectionEndCol = mouseToCol(e.getX());
-            selectionEndRow = mouseToRow(e.getY());
+            selectionEndRow = screenRowToAbsolute(mouseToRow(e.getY()));
             isSelecting = false;
             // 如果起点和终点相同，视为单击，清除选择
             if (selectionStartCol == selectionEndCol && selectionStartRow == selectionEndRow) {
-                clearSelection();
+                // 单击：若之前无选择则mousePressed未渲染，此处也无需渲染；
+                // 若之前有选择则mousePressed已渲染清除旧高亮，此处只需重置坐标
+                selectionStartCol = -1;
+                selectionStartRow = -1;
+                selectionEndCol = -1;
+                selectionEndRow = -1;
             } else {
+                // 拖拽选择完成，确保最终渲染（取消任何pending的节流渲染）
+                dragRenderPending = false;
                 render();
             }
         }
@@ -665,7 +867,7 @@ public class TerminalView extends Canvas {
         if (e.getButton() != MouseButton.PRIMARY) return;
 
         int col = mouseToCol(e.getX());
-        int row = mouseToRow(e.getY());
+        int absRow = screenRowToAbsolute(mouseToRow(e.getY()));
         int cols = emulator.getCols();
 
         if (e.getClickCount() == 2) {
@@ -673,33 +875,33 @@ public class TerminalView extends Canvas {
             int startCol = col;
             int endCol = col;
             // 如果点击在宽字符占位符(\0)上，回退到宽字符主cell
-            if (emulator.getChar(startCol, row) == '\0' && startCol > 0) {
+            if (getCharAtAbsolute(startCol, absRow) == '\0' && startCol > 0) {
                 startCol--;
                 endCol = startCol;
             }
             // 向左查找单词边界
-            while (startCol > 0 && isWordChar(emulator.getChar(startCol - 1, row))) {
+            while (startCol > 0 && isWordChar(getCharAtAbsolute(startCol - 1, absRow))) {
                 startCol--;
             }
             // 向右查找单词边界
-            while (endCol < cols - 1 && isWordChar(emulator.getChar(endCol + 1, row))) {
+            while (endCol < cols - 1 && isWordChar(getCharAtAbsolute(endCol + 1, absRow))) {
                 endCol++;
             }
             // 确保选中范围包含完整的宽字符（如果endCol停在宽字符主cell上，需要包含其占位符）
-            if (emulator.isWideChar(emulator.getChar(endCol, row)) && endCol + 1 < cols) {
+            if (isWideCharAtAbsolute(endCol, absRow) && endCol + 1 < cols) {
                 endCol++;
             }
-            selectionStartRow = row;
+            selectionStartRow = absRow;
             selectionStartCol = startCol;
-            selectionEndRow = row;
+            selectionEndRow = absRow;
             selectionEndCol = endCol;
             isSelecting = false;
             render();
         } else if (e.getClickCount() == 3) {
             // 三击选中整行
-            selectionStartRow = row;
+            selectionStartRow = absRow;
             selectionStartCol = 0;
-            selectionEndRow = row;
+            selectionEndRow = absRow;
             selectionEndCol = cols - 1;
             isSelecting = false;
             render();
@@ -801,11 +1003,18 @@ public class TerminalView extends Canvas {
         for (int row = startRow; row <= endRow; row++) {
             int lineStart = (row == startRow) ? startCol : 0;
             int lineEnd = (row == endRow) ? endCol : cols - 1;
+            int lineLenBefore = sb.length();
             for (int col = lineStart; col <= lineEnd; col++) {
-                char c = emulator.getChar(col, row);
+                char c = getCharAtAbsolute(col, row);
                 if (c == '\0') continue; // 跳过宽字符占位符
                 sb.append(c);
             }
+            // 去除行末填充空格（终端buffer用空格填充到列宽，复制时不应包含）
+            int end = sb.length();
+            while (end > lineLenBefore && sb.charAt(end - 1) == ' ') {
+                end--;
+            }
+            sb.delete(end, sb.length());
             if (row < endRow) {
                 sb.append('\n');
             }
@@ -814,12 +1023,13 @@ public class TerminalView extends Canvas {
     }
 
     /**
-     * 全选
+     * 全选（覆盖scrollback历史行 + 当前主缓冲区所有行）
      */
     public void selectAll() {
+        int scrollbackSize = emulator.isUsingAltBuffer() ? 0 : emulator.getScrollbackSize();
         selectionStartRow = 0;
         selectionStartCol = 0;
-        selectionEndRow = emulator.getRows() - 1;
+        selectionEndRow = scrollbackSize + emulator.getRows() - 1;
         selectionEndCol = emulator.getCols() - 1;
         render();
     }

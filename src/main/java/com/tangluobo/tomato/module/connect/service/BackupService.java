@@ -51,12 +51,9 @@ public class BackupService {
     public static String createBackup(ConnectionConfig config, String databaseName,
                                       List<BackupDialog.BackupObject> objects, String comment,
                                       boolean lockTables, boolean singleTransaction,
-                                      String filename, BackupDialog.BackupTask task) throws Exception {
+                                      String filename, String path, BackupDialog.BackupTask task) throws Exception {
 
-        String sanitizedConn = sanitizeFileName(config.getName());
-        String sanitizedDb = sanitizeFileName(databaseName);
-
-        Path dir = Paths.get(APP_DIR, sanitizedConn, sanitizedDb, BACKUP_DIR);
+        Path dir = resolveBackupDir(config.getName(), databaseName, path);
         Files.createDirectories(dir);
         Path file = dir.resolve(filename);
 
@@ -335,11 +332,8 @@ public class BackupService {
     // ==================== 还原 ====================
 
     public static void restoreBackup(ConnectionConfig config, String databaseName,
-                                      String backupName, RestoreTask task) throws Exception {
-        String sanitizedConn = sanitizeFileName(config.getName());
-        String sanitizedDb = sanitizeFileName(databaseName);
-
-        Path file = Paths.get(APP_DIR, sanitizedConn, sanitizedDb, BACKUP_DIR, backupName + ".nb3");
+                                      String backupName, String path, RestoreTask task) throws Exception {
+        Path file = resolveBackupDir(config.getName(), databaseName, path).resolve(backupName + ".nb3");
         if (!Files.exists(file)) {
             throw new IOException("备份文件不存在: " + file);
         }
@@ -478,10 +472,8 @@ public class BackupService {
 
     // ==================== 文件管理 ====================
 
-    public static List<String> listBackups(String connectionName, String dbName) {
-        String sanitizedConn = sanitizeFileName(connectionName);
-        String sanitizedDb = sanitizeFileName(dbName);
-        Path dir = Paths.get(APP_DIR, sanitizedConn, sanitizedDb, BACKUP_DIR);
+    public static List<String> listBackups(String connectionName, String dbName, String path) {
+        Path dir = resolveBackupDir(connectionName, dbName, path);
         List<String> backups = new ArrayList<>();
         if (!Files.isDirectory(dir)) return backups;
 
@@ -497,10 +489,23 @@ public class BackupService {
         return backups;
     }
 
-    public static void deleteBackupFile(String connectionName, String dbName, String backupName) {
-        String sanitizedConn = sanitizeFileName(connectionName);
-        String sanitizedDb = sanitizeFileName(dbName);
-        Path file = Paths.get(APP_DIR, sanitizedConn, sanitizedDb, BACKUP_DIR, backupName + ".nb3");
+    /** 列出备份目录下的子目录名 */
+    public static List<String> listBackupDirs(String connectionName, String dbName, String path) {
+        Path dir = resolveBackupDir(connectionName, dbName, path);
+        List<String> dirs = new ArrayList<>();
+        if (!Files.isDirectory(dir)) return dirs;
+
+        try (Stream<Path> stream = Files.list(dir)) {
+            stream.filter(Files::isDirectory)
+                  .forEach(p -> dirs.add(p.getFileName().toString()));
+        } catch (IOException e) {
+            System.err.println("加载备份子目录失败: " + e.getMessage());
+        }
+        return dirs;
+    }
+
+    public static void deleteBackupFile(String connectionName, String dbName, String backupName, String path) {
+        Path file = resolveBackupDir(connectionName, dbName, path).resolve(backupName + ".nb3");
         try {
             Files.deleteIfExists(file);
         } catch (IOException e) {
@@ -508,18 +513,44 @@ public class BackupService {
         }
     }
 
+    /** 递归删除备份目录（磁盘上的子目录及其所有内容） */
+    public static void deleteBackupDir(String connectionName, String dbName, String path) {
+        Path dir = resolveBackupDir(connectionName, dbName, path);
+        if (!Files.isDirectory(dir)) return;
+        try (Stream<Path> walk = Files.walk(dir)) {
+            walk.sorted(java.util.Comparator.reverseOrder())
+                .forEach(p -> {
+                    try { Files.deleteIfExists(p); } catch (IOException ignored) {}
+                });
+        } catch (IOException e) {
+            System.err.println("删除备份目录失败: " + e.getMessage());
+        }
+    }
+
     public static void renameBackupFile(String connectionName, String dbName,
-                                         String oldName, String newName) throws IOException {
-        String sanitizedConn = sanitizeFileName(connectionName);
-        String sanitizedDb = sanitizeFileName(dbName);
+                                         String oldName, String newName, String path) throws IOException {
         String sanitizedNew = sanitizeFileName(newName);
 
-        Path oldFile = Paths.get(APP_DIR, sanitizedConn, sanitizedDb, BACKUP_DIR, oldName + ".nb3");
-        Path newFile = Paths.get(APP_DIR, sanitizedConn, sanitizedDb, BACKUP_DIR, sanitizedNew + ".nb3");
+        Path dir = resolveBackupDir(connectionName, dbName, path);
+        Path oldFile = dir.resolve(oldName + ".nb3");
+        Path newFile = dir.resolve(sanitizedNew + ".nb3");
 
         if (Files.exists(oldFile)) {
             Files.move(oldFile, newFile);
         }
+    }
+
+    /** 解析备份目录：~/.tomato/<conn>/<db>/backup/<path> */
+    public static Path resolveBackupDir(String connectionName, String dbName, String path) {
+        String sanitizedConn = sanitizeFileName(connectionName);
+        String sanitizedDb = sanitizeFileName(dbName);
+        Path dir = Paths.get(APP_DIR, sanitizedConn, sanitizedDb, BACKUP_DIR);
+        if (path != null && !path.isEmpty()) {
+            for (String part : path.split("/")) {
+                dir = dir.resolve(sanitizeFileName(part));
+            }
+        }
+        return dir;
     }
 
     // ==================== 工具方法 ====================
@@ -833,6 +864,7 @@ public class BackupService {
         private final ConnectionConfig config;
         private final String databaseName;
         private final String backupName;
+        private final String path;
         private int totalObjects;
         private long recordCount = 0;
         private long startTime;
@@ -840,10 +872,11 @@ public class BackupService {
         private final javafx.beans.property.SimpleLongProperty recordCountProp = new javafx.beans.property.SimpleLongProperty();
         private final javafx.beans.property.SimpleStringProperty runningTime = new javafx.beans.property.SimpleStringProperty();
 
-        public RestoreTask(ConnectionConfig config, String databaseName, String backupName) {
+        public RestoreTask(ConnectionConfig config, String databaseName, String backupName, String path) {
             this.config = config;
             this.databaseName = databaseName;
             this.backupName = backupName;
+            this.path = path == null ? "" : path;
         }
 
         public javafx.beans.property.SimpleLongProperty recordCountProperty() { return recordCountProp; }
@@ -855,7 +888,7 @@ public class BackupService {
         protected Void call() throws Exception {
             startTime = System.currentTimeMillis();
             updateMessage("开始还原备份 " + backupName);
-            BackupService.restoreBackup(config, databaseName, backupName, this);
+            BackupService.restoreBackup(config, databaseName, backupName, path, this);
             long elapsed = System.currentTimeMillis() - startTime;
             Platform.runLater(() -> runningTime.set(String.format("%d.%d 秒", elapsed / 1000, (elapsed % 1000) / 100)));
             updateMessage("还原完成");

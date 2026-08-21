@@ -36,3 +36,10 @@ build/
 .DS_Store
 /.idea/
 
+### jpackage 打包 ###
+# WiX 3.x binaries（从 nuget 下载，体积大，不入库）
+packaging/wix314/
+packaging/wix314-binaries.zip
+packaging/wix.nupkg
+packaging/wix-tmp/
+

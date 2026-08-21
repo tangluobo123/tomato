@@ -1,0 +1,8 @@
+.md-heading { -fx-fill: #1163a6; -fx-font-weight: bold; }
+.md-code { -fx-fill: #c7254e; -fx-font-family: 'Consolas','Courier New',monospace; }
+.md-link { -fx-fill: #1a73e8; }
+.md-bold { -fx-font-weight: bold; }
+.md-italic { -fx-font-posture: italic; }
+.md-listmark { -fx-fill: #d14; -fx-font-weight: bold; }
+.md-quotemark { -fx-fill: #1a73e8; -fx-font-weight: bold; }
+.md-rect-select { -rtfx-background-color: #cfe3ff; }
